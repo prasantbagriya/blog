@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/admin
+Sitemap: https://chatwizs.com/sitemap.xml
+Sitemap: https://chatwizs.com/news-sitemap.xml

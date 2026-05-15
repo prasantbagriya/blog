@@ -1,0 +1,230 @@
+import type { Metadata } from "next";
+import "./globals.css";
+import { Inter } from "next/font/google";
+import Script from "next/script";
+import Link from 'next/link';
+import Copyright from './Copyright';
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
+
+export const metadata: Metadata = {
+  metadataBase: new URL('https://chatwizs.com'),
+  title: {
+    default: "ChatWizs | Expert Insights & SEO Optimized Content",
+    template: "%s | ChatWizs",
+  },
+  description: "Expert-verified articles on SEO, technology, and digital marketing. Built for Google 2026 policy compliance with full EEAT signals.",
+  keywords: ["blog", "seo", "technology", "digital marketing", "core web vitals", "eeat", "google 2026", "web development"],
+  authors: [{ name: "ChatWizs Editorial Team", url: 'https://chatwizs.com/about' }],
+  creator: 'ChatWizs',
+  publisher: 'ChatWizs',
+  category: 'Technology',
+  alternates: {
+    canonical: '/',
+    types: {
+      'application/rss+xml': '/feed.xml',
+      'application/atom+xml': '/feed.xml',
+    },
+  },
+  openGraph: {
+    title: "ChatWizs | Expert Insights & SEO Optimized Content",
+    description: "Expert-verified articles with full EEAT compliance, structured data, and Core Web Vitals optimization.",
+    type: "website",
+    url: 'https://chatwizs.com',
+    siteName: 'ChatWizs',
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ChatWizs',
+    description: 'Expert-verified content optimized for Google search.',
+    creator: '@chatwizs',
+    site: '@chatwizs',
+  },
+  manifest: '/manifest.json',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: 'YQfd5rzgI0gkUOhQkfJYQl66T_IBpiy85WOk8H0OzH0',
+  },
+};
+
+export const viewport = {
+  themeColor: '#2563eb',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const baseUrl = 'https://chatwizs.com';
+
+  const orgJsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': ['Organization', 'NewsMediaOrganization'],
+        '@id': `${baseUrl}/#organization`,
+        name: 'ChatWizs',
+        alternateName: 'ChatWizs Blog',
+        url: baseUrl,
+        logo: {
+          '@type': 'ImageObject',
+          url: `${baseUrl}/logo.png`,
+          width: 512,
+          height: 512,
+          caption: 'ChatWizs Logo',
+        },
+        foundingDate: '2024-01-01',
+        founder: {
+          '@type': 'Person',
+          name: 'ChatWizs Team',
+          url: `${baseUrl}/about`,
+        },
+        contactPoint: [
+          {
+            '@type': 'ContactPoint',
+            contactType: 'customer support',
+            email: 'support@chatwizs.com',
+            availableLanguage: ['English'],
+          },
+          {
+            '@type': 'ContactPoint',
+            contactType: 'editorial',
+            email: 'editorial@chatwizs.com',
+            availableLanguage: ['English'],
+          },
+        ],
+        publishingPrinciples: `${baseUrl}/about#editorial-standards`,
+        ownershipFundingInfo: `${baseUrl}/about#mission`,
+        actionableFeedbackPolicy: `${baseUrl}/contact`,
+        correctionsPolicy: `${baseUrl}/about#editorial-standards`,
+        ethicsPolicy: `${baseUrl}/about#editorial-standards`,
+        verificationFactCheckingPolicy: `${baseUrl}/about#editorial-standards`,
+        sameAs: [
+          'https://twitter.com/chatwizs',
+          'https://linkedin.com/company/chatwizs',
+        ],
+      },
+      {
+        '@type': 'WebSite',
+        '@id': `${baseUrl}/#website`,
+        url: baseUrl,
+        name: 'ChatWizs',
+        description: 'Expert-verified articles on SEO, technology, and digital marketing.',
+        publisher: { '@id': `${baseUrl}/#organization` },
+        inLanguage: 'en-US',
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: {
+            '@type': 'EntryPoint',
+            urlTemplate: `${baseUrl}/search?q={search_term_string}`,
+          },
+          'query-input': 'required name=search_term_string',
+        },
+      },
+    ],
+  };
+
+  return (
+    <html lang="en" className={inter.variable}>
+      <head>
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
+        <style dangerouslySetInnerHTML={{
+          __html: `
+          :root {
+            --primary: #1d4ed8;
+            --background: #ffffff;
+            --foreground: #0f172a;
+            --muted-foreground: #334155;
+            --header-height: 60px;
+            --radius: 0.75rem;
+            --border: #e5e7eb;
+          }
+          .hero-h1 { font-size: 3.5rem; margin-bottom: 1rem; letter-spacing: -0.05em; line-height: 1.1; font-weight: 800; }
+          .hero-p { font-size: 1.125rem; color: var(--muted-foreground); max-width: 600px; margin: 0 auto; }
+          @media (max-width: 768px) { .hero-h1 { font-size: 2.25rem; } .hero-p { font-size: 1rem; } }
+          
+          body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--background); color: var(--foreground); -webkit-font-smoothing: antialiased; text-rendering: optimizeSpeed; }
+          .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 1.25rem; }
+          header { position: sticky; top: 0; z-index: 100; height: var(--header-height); background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+          .hero-skeleton { text-align: center; padding: 3rem 0; min-height: 200px; contain: layout paint; }
+          @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+          .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+          main { min-height: 80vh; contain: content; }
+          .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+          .sr-only:focus { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; }
+        ` }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }} />
+        <link rel="alternate" type="application/rss+xml" title="ChatWizs RSS Feed" href="/feed.xml" />
+        <Script id="inp-guard" strategy="afterInteractive" dangerouslySetInnerHTML={{
+          __html: `
+          try {
+            let idleTimeout;
+            const handleInteraction = () => {
+              document.body.classList.add('user-interacting');
+              clearTimeout(idleTimeout);
+              idleTimeout = setTimeout(() => document.body.classList.remove('user-interacting'), 150);
+            };
+            window.addEventListener('scroll', handleInteraction, { passive: true });
+            window.addEventListener('touchstart', handleInteraction, { passive: true });
+            window.addEventListener('click', handleInteraction, { passive: true });
+          } catch (e) {}
+        ` }} />
+        <link rel="manifest" href="/manifest.json" />
+      </head>
+      <body className={inter.className}>
+        <a href="#main-content" className="sr-only" style={{ top: '1rem', left: '1rem', zIndex: 9999, background: 'var(--primary)', color: 'white', padding: '0.5rem 1rem', borderRadius: 'var(--radius)', textDecoration: 'none' }}>
+          Skip to content
+        </a>
+        <header className="glass-panel" style={{ position: 'sticky', top: 0, zIndex: 100, margin: 0 }}>
+          <nav className="container" aria-label="Main Navigation" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: 'var(--header-height)' }}>
+            <a href="/" style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.025em', color: 'var(--foreground)' }} aria-label="ChatWizs Home">
+              Chat<span style={{ color: 'var(--primary)' }}>Wizs</span>
+            </a>
+            <ul style={{ display: 'flex', gap: '1rem', listStyle: 'none', alignItems: 'center', margin: 0, padding: 0 }} role="list">
+              <li><Link href="/" style={{ fontWeight: 700, color: 'var(--foreground)' }}>Home</Link></li>
+              <li><Link href="/blog" style={{ fontWeight: 700, color: 'var(--foreground)' }}>Blog</Link></li>
+              <li><Link href="/about" style={{ fontWeight: 700, color: 'var(--foreground)' }}>About</Link></li>
+              <li><Link href="/admin" style={{ fontSize: '0.8125rem', color: 'white', background: 'var(--primary)', padding: '0.4rem 0.8rem', borderRadius: '6px', fontWeight: 700 }}>Admin</Link></li>
+            </ul>
+          </nav>
+        </header>
+        <main id="main-content" className="container">
+          {children}
+        </main>
+        <footer className="container" style={{ margin: 0, padding: 0, borderTop: '1px solid var(--border)', textAlign: 'center' }}>
+          <nav aria-label="Footer Navigation" style={{ display: 'flex', justifyContent: 'center', gap: '1rem', margin: 0, padding: '1rem 0', fontSize: '0.875rem', color: 'var(--muted-foreground)', fontWeight: 600 }}>
+            <Link href="/about">About Us</Link>
+            <Link href="/privacy">Privacy Policy</Link>
+            <Link href="/editorial-policy" style={{ fontWeight: 700, color: 'var(--primary)' }}>Editorial Guidelines</Link>
+            <Link href="/fact-checking-policy" style={{ fontWeight: 700, color: 'var(--primary)' }}>Fact-Checking Policy</Link>
+            <Link href="/contact">Contact</Link>
+            <Link href="/terms">Terms</Link>
+          </nav>
+          <p style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
+            <Copyright /> Built with Google 2026 Policy Compliance.
+          </p>
+        </footer>
+      </body>
+    </html>
+  );
+}
