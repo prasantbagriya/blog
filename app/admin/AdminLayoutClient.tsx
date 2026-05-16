@@ -96,7 +96,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
           </div>
         </header>
 
-        <main style={{ padding: '40px', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
+        <main style={{ padding: '0', width: '100%' }}>
           {children}
         </main>
       </div>

@@ -337,3 +337,15 @@ section:not(:first-of-type):not(.lcp-section), footer {
   html { font-size: 14px; }
   .container { padding: 0 0.875rem; }
 }
+
+/* ✅ Admin Full-Screen Overrides */
+body:has(.sovereign-editor-v5-fixed) header,
+body:has(.sovereign-editor-v5-fixed) footer {
+  display: none !important;
+}
+
+body:has(.sovereign-editor-v5-fixed) main {
+  max-width: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}

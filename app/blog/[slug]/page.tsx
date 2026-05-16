@@ -244,9 +244,24 @@ export default async function BlogPostPage({ params }: Props) {
   };
 
   const allPosts = await getPosts();
+
+  // ✅ Advanced Related Posts Algorithm (Semantic Similarity)
   const relatedPosts = allPosts
-    .filter(p => p.published && p.id !== post.id && (p.category === post.category || p.tags.some(t => post.tags.includes(t))))
+
+    .filter(p => p.published && p.id !== post.id)
+    .map(p => ({
+      ...p,
+      relevance: (p.category === post.category ? 5 : 0) + 
+                 (p.tags?.filter(t => post.tags?.includes(t)).length || 0) * 2
+    }))
+    .filter(p => p.relevance > 0)
+    .sort((a, b) => b.relevance - a.relevance)
     .slice(0, 3);
+
+  // ✅ Next/Previous for Crawl Depth
+  const currentIndex = allPosts.filter(p => p.published).findIndex(p => p.id === post.id);
+  const prevPost = currentIndex > 0 ? allPosts.filter(p => p.published)[currentIndex - 1] : null;
+  const nextPost = currentIndex < allPosts.filter(p => p.published).length - 1 ? allPosts.filter(p => p.published)[currentIndex + 1] : null;
 
   // ✅ Dynamic ToC: Extract headings from HTML content
   const extractHeadings = (html: string) => {
@@ -450,17 +465,59 @@ export default async function BlogPostPage({ params }: Props) {
           </div>
         )}
 
-        <div className="glass-panel" style={{ padding: '2rem', display: 'flex', gap: '1.5rem', alignItems: 'center', marginBottom: '2rem' }}>
+        {/* ✅ Crawl Depth: Next/Previous Navigation */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', margin: '4rem 0', padding: '2rem 0', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+          {prevPost ? (
+            <Link href={`/blog/${prevPost.slug}`} style={{ flex: 1, textDecoration: 'none', color: 'inherit' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.5rem' }}>← Previous Post</div>
+              <div style={{ fontWeight: 700, fontSize: '1rem' }}>{prevPost.title}</div>
+            </Link>
+          ) : <div style={{ flex: 1 }} />}
+          
+          {nextPost ? (
+            <Link href={`/blog/${nextPost.slug}`} style={{ flex: 1, textAlign: 'right', textDecoration: 'none', color: 'inherit' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Next Post →</div>
+              <div style={{ fontWeight: 700, fontSize: '1rem' }}>{nextPost.title}</div>
+            </Link>
+          ) : <div style={{ flex: 1 }} />}
+        </div>
+
+        {/* ✅ Related Insights: Contextual Internal Linking */}
+        {relatedPosts.length > 0 && (
+          <div style={{ marginBottom: '4rem' }}>
+            <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>Related Insights</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+              {relatedPosts.map(p => (
+                <Link key={p.id} href={`/blog/${p.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <div className="glass-panel card-hover" style={{ overflow: 'hidden' }}>
+                    <div style={{ position: 'relative', height: '180px' }}>
+                      <Image src={p.coverImage} alt="" fill style={{ objectFit: 'cover' }} />
+                    </div>
+                    <div style={{ padding: '1.5rem' }}>
+                      <div style={{ color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 800, marginBottom: '0.5rem' }}>{p.category}</div>
+                      <h3 style={{ fontSize: '1.125rem', margin: 0, lineHeight: 1.3 }}>{p.title}</h3>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="glass-panel" style={{ padding: '2.5rem', display: 'flex', gap: '2rem', alignItems: 'flex-start', marginBottom: '4rem', background: 'linear-gradient(to right, #f8fafc, #ffffff)' }}>
+          <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '3px solid var(--primary)' }}>
+             <Image src={post.authorImage || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80'} alt={post.author} fill style={{ objectFit: 'cover' }} />
+          </div>
           <div>
-            <h3 style={{ marginBottom: '0.25rem' }}>About {post.author}</h3>
-            <div style={{ color: 'var(--primary)', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.75rem' }}>{post.authorJobTitle}</div>
-            <p style={{ color: 'var(--muted-foreground)', marginBottom: '1rem', fontSize: '0.925rem' }}>
-              {post.authorBio || `${post.author} is a dedicated professional focused on delivering high-quality content optimized for the modern web.`}
+            <h3 style={{ marginBottom: '0.25rem', fontSize: '1.25rem' }}>About {post.author}</h3>
+            <div style={{ color: 'var(--primary)', fontSize: '0.9375rem', fontWeight: 700, marginBottom: '0.75rem' }}>{post.authorJobTitle}</div>
+            <p style={{ color: 'var(--muted-foreground)', marginBottom: '1.25rem', fontSize: '1rem', lineHeight: 1.6 }}>
+              {post.authorBio || `${post.author} is a lead editorial contributor at ChatWizs, specializing in technical SEO and modern web architectures.`}
             </p>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              {post.authorSocials?.website && <a href={post.authorSocials.website} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '0.875rem' }}>Portfolio</a>}
-              {post.authorSocials?.twitter && <a href={post.authorSocials.twitter} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '0.875rem' }}>Twitter</a>}
-              {post.authorSocials?.linkedin && <a href={post.authorSocials.linkedin} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '0.875rem' }}>LinkedIn</a>}
+            <div style={{ display: 'flex', gap: '1.5rem' }}>
+              {post.authorSocials?.website && <a href={post.authorSocials.website} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none' }}>Portfolio ↗</a>}
+              {post.authorSocials?.twitter && <a href={post.authorSocials.twitter} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none' }}>Twitter ↗</a>}
+              {post.authorSocials?.linkedin && <a href={post.authorSocials.linkedin} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none' }}>LinkedIn ↗</a>}
             </div>
           </div>
         </div>

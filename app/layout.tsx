@@ -169,12 +169,26 @@ export default function RootLayout({
           .hero-skeleton { text-align: center; padding: 3rem 0; min-height: 200px; contain: layout paint; }
           @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
           .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-          main { min-height: 80vh; contain: content; }
+          main { min-height: 80vh; }
           .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
           .sr-only:focus { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; }
         ` }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }} />
         <link rel="alternate" type="application/rss+xml" title="ChatWizs RSS Feed" href="/feed.xml" />
+        {/* ✅ Google Analytics (gtag.js) */}
+        <Script 
+          src="https://www.googletagmanager.com/gtag/js?id=G-1DRLZ66BX0" 
+          strategy="afterInteractive" 
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-1DRLZ66BX0');
+          `}
+        </Script>
+
         <Script id="inp-guard" strategy="afterInteractive" dangerouslySetInnerHTML={{
           __html: `
           try {

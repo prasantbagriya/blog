@@ -25,24 +25,271 @@ import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
-import {
-   ChevronLeft, Save, Send, Eye, Search, Smartphone,
-   Info, AlertTriangle, CheckCircle, Settings, BarChart,
-   Type, User, Tag, ShieldCheck, Zap, Maximize2,
-   Minimize2, Share2, AlignLeft, AlignCenter,
-   AlignRight, Highlighter, CheckSquare, Hash, FileText,
-   Cpu, Database, Sparkles, Globe, History, Layers,
-   Award, BookOpen, Fingerprint, ExternalLink, MousePointer2,
-   MessageSquare, Brain, Target, Shield, Verified, AlertCircle,
-   TrendingUp, Activity, FileJson, X, MoreHorizontal, Eraser,
-   Subscript as SubIcon, Superscript as SuperIcon, Minus, Code, HelpCircle,
-   ListOrdered, List, Table as TableIcon, ImageIcon, Link as LinkIcon, Bold, Italic
-} from 'lucide-react';
+import { Node, Extension, mergeAttributes } from '@tiptap/core';
+import Youtube from '@tiptap/extension-youtube';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Custom FontSize Extension
+const FontSize = Extension.create({
+  name: 'fontSize',
+  addOptions() {
+    return { types: ['textStyle'] }
+  },
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: element => element.style.fontSize?.replace(/['"]+/g, ''),
+            renderHTML: attributes => {
+              if (!attributes.fontSize) return {}
+              return { style: `font-size: ${attributes.fontSize}` }
+            },
+          },
+        },
+      },
+    ]
+  },
+  addCommands() {
+    return {
+      setFontSize: fontSize => ({ chain }) => {
+        return chain().setMark('textStyle', { fontSize }).run()
+      },
+      unsetFontSize: () => ({ chain }) => {
+        return chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run()
+      },
+    }
+  },
+})
+
+// Custom Video Extension for local uploads
+const Video = Node.create({
+  name: 'video',
+  group: 'block',
+  selectable: true,
+  draggable: true,
+  atom: true,
+  addAttributes() {
+    return {
+      src: { default: null },
+      controls: { default: true },
+    };
+  },
+  parseHTML() {
+    return [{ tag: 'video' }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['div', { style: 'margin: 24px 0; border-radius: 16px; overflow: hidden; background: #000; line-height: 0;' }, 
+      ['video', mergeAttributes(HTMLAttributes, { style: 'width: 100%; height: auto; display: block;' })]
+    ];
+  },
+});
+
+const ImageSlider = Node.create({
+  name: 'imageSlider',
+  group: 'block',
+  atom: true,
+  draggable: true,
+  addAttributes() {
+    return {
+      images: {
+        default: [],
+        parseHTML: element => {
+          const imgs = Array.from(element.querySelectorAll('img'));
+          return imgs.map(img => ({ src: img.src, alt: img.alt }));
+        }
+      },
+      autoScroll: { default: true },
+      centerZoom: { default: true },
+      speed: { default: 3000 }
+    }
+  },
+  parseHTML() {
+    return [{ tag: 'div[data-image-slider]' }]
+  },
+  renderHTML({ HTMLAttributes }) {
+    const images = HTMLAttributes.images || [];
+    return ['div', mergeAttributes(HTMLAttributes, { 
+      'data-image-slider': 'true',
+      'data-auto-scroll': HTMLAttributes.autoScroll,
+      'data-center-zoom': HTMLAttributes.centerZoom,
+      'data-speed': HTMLAttributes.speed,
+      style: 'display: flex; overflow-x: auto; gap: 16px; padding: 16px 0; margin: 24px 0; scroll-snap-type: x mandatory; scroll-behavior: smooth; background: #f8fafc; border-radius: 16px; align-items: center;'
+    }), 
+      ...images.map((img: any) => ['img', { src: img.src, alt: img.alt, style: 'height: 300px; border-radius: 12px; scroll-snap-align: center; object-fit: cover; flex-shrink: 0;' }])
+    ];
+  }
+});
+
+const SocialEmbed = Node.create({
+  name: 'socialEmbed',
+  group: 'block',
+  selectable: true,
+  draggable: true,
+  atom: true,
+  addAttributes() {
+    return {
+      src: { default: null },
+      platform: { default: 'generic' },
+    };
+  },
+  parseHTML() {
+    return [{ tag: 'iframe[data-social-embed]' }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['div', { 
+      style: 'margin: 24px 0; border-radius: 20px; overflow: hidden; background: #f8fafc; border: 1px solid #e2e8f0; position: relative; padding-bottom: 56.25%; height: 0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);' 
+    },
+      ['iframe', mergeAttributes(HTMLAttributes, { 
+         'data-social-embed': '',
+         style: 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;',
+         allowfullscreen: 'true',
+         allow: "autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+      })]
+    ];
+  },
+});
+
+const FaqBlock = Node.create({
+  name: 'faqBlock',
+  group: 'block',
+  atom: true,
+  draggable: true,
+  addAttributes() {
+    return {
+      items: {
+        default: [],
+        parseHTML: element => {
+          try {
+            return JSON.parse(element.getAttribute('data-faqs') || '[]');
+          } catch {
+            return [];
+          }
+        }
+      }
+    }
+  },
+  parseHTML() {
+    return [{ tag: 'div[data-faq-block]' }]
+  },
+  renderHTML({ HTMLAttributes }) {
+    const items = HTMLAttributes.items || [];
+    return ['div', mergeAttributes(HTMLAttributes, { 
+      'data-faq-block': 'true', 
+      'data-faqs': JSON.stringify(items),
+      style: 'margin: 32px 0; border: 1px solid #e2e8f0; border-radius: 20px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);'
+    }),
+      ['div', { style: 'padding: 16px 24px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 10px;' },
+        ['svg', { xmlns: "http://www.w3.org/2000/svg", width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "#2563eb", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round" },
+          ['circle', { cx: "12", cy: "12", r: "10" }],
+          ['path', { d: "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" }],
+          ['path', { d: "M12 17h.01" }]
+        ],
+        ['span', { style: 'font-size: 13px; font-weight: 800; color: #1e293b; letter-spacing: 0.5px;' }, 'FREQUENTLY ASKED QUESTIONS']
+      ],
+      ...items.map((item: any) => ['div', { style: 'border-bottom: 1px solid #f1f5f9; padding: 16px 24px;' },
+        ['div', { style: 'font-weight: 700; color: #1e293b; margin-bottom: 8px; font-size: 15px;' }, `Q: ${item.question}`],
+        ['div', { style: 'color: #475569; font-size: 14px; line-height: 1.6;' }, item.answer]
+      ])
+    ];
+  }
+});
+
 import { Post } from '@/lib/db';
 import { handleSavePost, handleUpload } from '@/lib/actions';
 import { format } from 'date-fns';
 import '@/app/editor.css';
+
+// --- Sovereign Styles & Helper Components ---
+const rootContainerStyle: React.CSSProperties = { position: 'fixed', inset: 0, background: '#ffffff', display: 'flex', flexDirection: 'column', zIndex: 999999 };
+const headerStyle: React.CSSProperties = { height: '80px', background: '#fff', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 40px', position: 'sticky', top: 0, zIndex: 1000 };
+const navIconStyle: React.CSSProperties = { background: '#f1f5f9', border: 'none', padding: '10px', borderRadius: '12px', cursor: 'pointer' };
+const headerTitleStyle: React.CSSProperties = { fontSize: '20px', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.5px' };
+const scoreHubStyle: React.CSSProperties = { display: 'flex', gap: '16px', marginRight: '10px' };
+const iconBtnStyle: React.CSSProperties = { background: '#fff', border: '1px solid #e2e8f0', padding: '10px', borderRadius: '12px', cursor: 'pointer', color: '#64748b' };
+const publishBtnStyle: React.CSSProperties = { background: '#2563eb', color: '#fff', border: 'none', padding: '12px 28px', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)' };
+const mainCanvasStyle: React.CSSProperties = { flex: 1, overflowY: 'auto', background: '#ffffff', display: 'flex', flexDirection: 'column', position: 'relative', scrollBehavior: 'smooth' };
+const floatingToolbarStyle: React.CSSProperties = { position: 'sticky', top: '0', zIndex: 100, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(16px)', padding: '16px 40px', borderBottom: '1px solid #e2e8f0', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', userSelect: 'none' };
+const toolDivider: React.CSSProperties = { width: '1px', height: '24px', background: '#e2e8f0', margin: '0 4px' };
+const intelSidebarStyle: React.CSSProperties = { width: '300px', background: '#fff', borderLeft: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' };
+const intelTabsStyle: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', background: '#f1f5f9', padding: '6px', borderRadius: '16px', gap: '4px' };
+const sidebarHeadingStyle: React.CSSProperties = { fontSize: '11px', fontWeight: 800, color: '#94a3b8', marginBottom: '16px', marginTop: '30px', textTransform: 'uppercase', letterSpacing: '1px' };
+const hcuCardStyle: React.CSSProperties = { background: '#f8fafc', padding: '20px', borderRadius: '20px', border: '1px solid #e2e8f0', marginBottom: '24px' };
+const metaLabelStyle: React.CSSProperties = { fontSize: '11px', fontWeight: 700, color: '#94a3b8', marginBottom: '8px', display: 'block' };
+const metaInputStyle: React.CSSProperties = { width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '14px', outline: 'none', background: '#f8fafc' };
+const tipRowStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', marginBottom: '8px', fontWeight: 600 };
+const eeatCheckStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 600, color: '#475569' };
+const metaTextAreaStyle: React.CSSProperties = { width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '14px', minHeight: '100px', outline: 'none', background: '#f8fafc' };
+const addNodeBtn: React.CSSProperties = { width: '100%', padding: '12px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', fontWeight: 800, color: '#2563eb', cursor: 'pointer' };
+const lsiTagStyle: React.CSSProperties = { background: '#eff6ff', color: '#2563eb', padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 700, border: '1px solid #dbeafe' };
+const guardianCard: React.CSSProperties = { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px', background: '#f0f7ff', borderRadius: '24px', border: '1px solid #dbeafe', marginBottom: '20px' };
+const headerSelectWrapper: React.CSSProperties = { display: 'flex', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0 12px', margin: '0 4px' };
+const headerSelectStyle: React.CSSProperties = { border: 'none', background: 'transparent', fontSize: '12px', fontWeight: 800, color: '#475569', outline: 'none', height: '34px', cursor: 'pointer' };
+const metaSelectStyle: React.CSSProperties = { width: '100%', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '14px', fontWeight: 600, background: '#fff' };
+const editorWrapperStyle: React.CSSProperties = { background: '#fff', padding: '40px', minHeight: '100vh', position: 'relative', maxWidth: '1000px', margin: '0 auto', width: '100%' };
+const bubbleMenuStyle: React.CSSProperties = { background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '6px', display: 'flex', gap: '6px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', zIndex: 1000 };
+const floatingMenuStyle: React.CSSProperties = { background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '4px', display: 'flex', gap: '4px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', zIndex: 1000 };
+const fMenuBtn: React.CSSProperties = { padding: '6px 10px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '12px', fontWeight: 800, color: '#64748b' };
+const modalBackdropStyle: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.3)', backdropFilter: 'blur(8px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' };
+const modalContentStyle: React.CSSProperties = { background: '#fff', width: '90%', maxWidth: '850px', borderRadius: '32px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' };
+const modalHeaderStyle: React.CSSProperties = { padding: '24px 40px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
+const closeModalBtn: React.CSSProperties = { border: 'none', background: '#f1f5f9', padding: '8px', borderRadius: '10px', cursor: 'pointer' };
+const faqNodeStyle: React.CSSProperties = { padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' };
+const faqInputSmall: React.CSSProperties = { width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '10px', fontSize: '13px', fontWeight: 600 };
+const faqTextArea: React.CSSProperties = { width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', minHeight: '80px' };
+
+const deepWorkOverlayStyle: React.CSSProperties = { position: 'fixed', inset: 0, background: '#ffffff', zIndex: 2000000, overflowY: 'auto' };
+const exitDeepWorkStyle: React.CSSProperties = { background: '#f1f5f9', border: 'none', padding: '12px 24px', borderRadius: '12px', fontSize: '14px', fontWeight: 700, color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' };
+const deepWorkTitleStyle: React.CSSProperties = { width: '100%', fontSize: '64px', fontWeight: 900, border: 'none', outline: 'none', background: 'transparent', textAlign: 'center', color: '#0f172a', marginBottom: '60px', letterSpacing: '-0.04em' };
+const tocItemStyle: React.CSSProperties = { fontSize: '12px', fontWeight: 600, color: '#64748b', cursor: 'pointer', padding: '4px 0', transition: 'all 0.2s' };
+
+
+const MiniScore = ({ label, value, color = '#2563eb' }: any) => (
+   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <span style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', letterSpacing: '0.5px', marginBottom: '2px' }}>{label}</span>
+      <span style={{ fontSize: '16px', fontWeight: 900, color }}>{value}%</span>
+   </div>
+);
+
+const TabBtn = ({ label, icon, active, onClick, status = 'neutral' }: any) => (
+   <button onClick={onClick} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '10px 0', background: active ? '#fff' : 'transparent', border: 'none', color: active ? '#2563eb' : '#64748b', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: active ? '0 4px 6px -1px rgba(0,0,0,0.05)' : 'none' }}>
+      {status !== 'neutral' && <div style={{ position: 'absolute', top: '8px', right: '8px', width: '6px', height: '6px', borderRadius: '50%', background: status === 'success' ? '#10b981' : '#f59e0b' }} />}
+      {icon} <span style={{ fontSize: '8px', fontWeight: 900, letterSpacing: '0.5px' }}>{label.toUpperCase()}</span>
+   </button>
+);
+
+const SovereignToolBtn = ({ children, onClick, active, title, color }: any) => (
+   <button 
+      type="button" 
+      onClick={onClick} 
+      title={title} 
+      style={{ 
+         width: '38px', 
+         height: '38px', 
+         borderRadius: '10px', 
+         border: active ? '2px solid #2563eb' : '1px solid #e2e8f0', 
+         background: active ? '#eff6ff' : '#fff', 
+         cursor: 'pointer', 
+         display: 'flex', 
+         alignItems: 'center', 
+         justifyContent: 'center', 
+         padding: 0,
+         transition: 'all 0.2s',
+         color: active ? '#2563eb' : (color || '#1e293b')
+      }}
+   >
+      {children}
+   </button>
+);
+
+const InputGroup = ({ label, value, onChange, placeholder }: any) => (
+   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <label style={metaLabelStyle}>{label}</label>
+      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={metaInputStyle} />
+   </div>
+);
 
 interface PostFormProps {
    post?: Post;
@@ -52,6 +299,9 @@ export default function PostForm({ post }: PostFormProps) {
    const [title, setTitle] = useState(post?.title || '');
    const [slug, setSlug] = useState(post?.slug || '');
    const [metaDescription, setMetaDescription] = useState(post?.metaDescription || '');
+   const [excerpt, setExcerpt] = useState(post?.excerpt || '');
+   const [coverImage, setCoverImage] = useState(post?.coverImage || '');
+   const [authorImage, setAuthorImage] = useState(post?.authorImage || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80');
    const [focusKeyword, setFocusKeyword] = useState('');
    const [category, setCategory] = useState(post?.category || 'General');
    const [tags, setTags] = useState<string[]>(post?.tags || []);
@@ -62,6 +312,7 @@ export default function PostForm({ post }: PostFormProps) {
    const [ogTitle, setOgTitle] = useState(post?.ogTitle || '');
    const [ogDescription, setOgDescription] = useState(post?.ogDescription || '');
    const [canonicalUrl, setCanonicalUrl] = useState(post?.canonicalUrl || '');
+   const [keywords, setKeywords] = useState(post?.keywords || '');
 
    const [faqs, setFaqs] = useState<{ question: string; answer: string }[]>(post?.faqs || []);
    const [faqSchemaEnabled, setFaqSchemaEnabled] = useState(true);
@@ -77,6 +328,7 @@ export default function PostForm({ post }: PostFormProps) {
    // EEAT Authority State
    const [authorExpertise, setAuthorExpertise] = useState(post?.authorJobTitle || 'Subject Matter Expert');
    const [authorBio, setAuthorBio] = useState(post?.authorBio || '');
+   const [authorSocials, setAuthorSocials] = useState(post?.authorSocials || { twitter: '', linkedin: '', website: '' });
    const [researchMethodology, setResearchMethodology] = useState(post?.researchMethodology || '');
    const [sources, setSources] = useState<{ title: string; url: string; type: 'primary' | 'secondary' }[]>(post?.sources || []);
 
@@ -100,6 +352,10 @@ export default function PostForm({ post }: PostFormProps) {
    const [mounted, setMounted] = useState(false);
    const [audience, setAudience] = useState<'beginner' | 'professional' | 'expert'>('professional');
    const fileInputRef = useRef<HTMLInputElement>(null);
+   const coverInputRef = useRef<HTMLInputElement>(null);
+   const videoInputRef = useRef<HTMLInputElement>(null);
+   const colorInputRef = useRef<HTMLInputElement>(null);
+   const sliderInputRef = useRef<HTMLInputElement>(null);
 
    const [lsiKeywords, setLsiKeywords] = useState<string[]>(['Search Intent', 'Entity SEO', 'Dwell Time', 'Core Web Vitals']);
    const [scheduleDate, setScheduleDate] = useState<string>('');
@@ -108,8 +364,164 @@ export default function PostForm({ post }: PostFormProps) {
    const [seoScore, setSeoScore] = useState(0);
    const [readabilityScore, setReadabilityScore] = useState(0);
    const [seoTips, setSeoTips] = useState<{ id: string; text: string; type: 'error' | 'warning' | 'success' }[]>([]);
+   const [isIndexing, setIsIndexing] = useState(false);
+   const [indexStatus, setIndexStatus] = useState<'idle' | 'success'>('idle');
    const [tableOfContents, setTableOfContents] = useState<{ id: string; text: string; level: number }[]>([]);
    const [entities, setEntities] = useState<{ name: string; type: string }[]>([]);
+
+   const [linkModalOpen, setLinkModalOpen] = useState(false);
+   const [linkInputUrl, setLinkInputUrl] = useState('');
+   const [linkOpenInNewTab, setLinkOpenInNewTab] = useState(false);
+   const [linkIsNoFollow, setLinkIsNoFollow] = useState(false);
+   const [videoModalOpen, setVideoModalOpen] = useState(false);
+   const [videoUrlInput, setVideoUrlInput] = useState('');
+   const [imageModalOpen, setImageModalOpen] = useState(false);
+   const [imageAltInput, setImageAltInput] = useState('');
+
+   // Slider State
+   const [sliderModalOpen, setSliderModalOpen] = useState(false);
+   const [sliderImages, setSliderImages] = useState<{src: string, alt: string}[]>([]);
+   const [sliderAutoScroll, setSliderAutoScroll] = useState(true);
+   const [sliderCenterZoom, setSliderCenterZoom] = useState(true);
+   const [sliderSpeed, setSliderSpeed] = useState(3000);
+
+   // FAQ State
+   const [faqModalOpen, setFaqModalOpen] = useState(false);
+   const [tempFaqs, setTempFaqs] = useState<{ question: string; answer: string }[]>([]);
+
+   const handleOpenFaqModal = () => {
+      if (!editor) return;
+      if (editor.isActive('faqBlock')) {
+         const attrs = editor.getAttributes('faqBlock');
+         setTempFaqs(attrs.items || []);
+      } else {
+         setTempFaqs([{ question: '', answer: '' }]);
+      }
+      setFaqModalOpen(true);
+   };
+
+   const handleApplyFaq = () => {
+      if (!editor || tempFaqs.length === 0) return;
+      const validFaqs = tempFaqs.filter(f => f.question.trim() && f.answer.trim());
+      if (editor.isActive('faqBlock')) {
+         editor.chain().focus().updateAttributes('faqBlock', { items: validFaqs }).run();
+      } else {
+         editor.chain().focus().insertContent({ type: 'faqBlock', attrs: { items: validFaqs } }).run();
+      }
+      setFaqModalOpen(false);
+   };
+
+   const handleOpenSliderModal = () => {
+      if (!editor) return;
+      if (editor.isActive('imageSlider')) {
+         const attrs = editor.getAttributes('imageSlider');
+         setSliderImages(attrs.images || []);
+         setSliderAutoScroll(attrs.autoScroll ?? true);
+         setSliderCenterZoom(attrs.centerZoom ?? true);
+         setSliderSpeed(attrs.speed || 3000);
+      } else {
+         setSliderImages([]);
+         setSliderAutoScroll(true);
+         setSliderCenterZoom(true);
+         setSliderSpeed(3000);
+      }
+      setSliderModalOpen(true);
+   };
+
+   const handleApplySlider = () => {
+      if (!editor || sliderImages.length === 0) return;
+      if (editor.isActive('imageSlider')) {
+         editor.chain().focus().updateAttributes('imageSlider', { images: sliderImages, autoScroll: sliderAutoScroll, centerZoom: sliderCenterZoom, speed: sliderSpeed }).run();
+      } else {
+         editor.chain().focus().insertContent({ type: 'imageSlider', attrs: { images: sliderImages, autoScroll: sliderAutoScroll, centerZoom: sliderCenterZoom, speed: sliderSpeed } }).run();
+      }
+      setSliderModalOpen(false);
+   };
+
+   const handleSliderImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const files = event.target.files;
+      if (!files) return;
+      for (let i = 0; i < files.length; i++) {
+         const formData = new FormData();
+         formData.append('file', files[i]);
+         try {
+            const result = await handleUpload(formData);
+            if (result.success && result.url) {
+               setSliderImages(prev => [...prev, { src: result.url, alt: '' }]);
+            }
+         } catch (error) { console.error('Slider image upload failed:', error); }
+      }
+   };
+
+   const handleOpenLinkModal = () => {
+      if (!editor) return;
+      const attrs = editor.getAttributes('link');
+      setLinkInputUrl(attrs.href || '');
+      setLinkOpenInNewTab(attrs.target === '_blank');
+      setLinkIsNoFollow(attrs.rel?.includes('nofollow') || false);
+      setLinkModalOpen(true);
+   };
+
+   const handleApplyLink = () => {
+      if (!editor) return;
+      if (linkInputUrl.trim() === '') {
+         editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      } else {
+         let url = linkInputUrl.trim();
+         if (!url.startsWith('http') && !url.startsWith('mailto:') && !url.startsWith('#')) {
+            url = 'https://' + url;
+         }
+         
+         const attributes: any = { href: url };
+         if (linkOpenInNewTab) attributes.target = '_blank';
+         else attributes.target = null;
+         
+         if (linkIsNoFollow) attributes.rel = 'nofollow';
+         else attributes.rel = null;
+
+         editor.chain().focus().extendMarkRange('link').setLink(attributes).run();
+      }
+      setLinkModalOpen(false);
+   };
+
+   const handleOpenImageModal = () => {
+      if (!editor) return;
+      const attrs = editor.getAttributes('image');
+      if (attrs.src) {
+         setImageAltInput(attrs.alt || '');
+         setImageModalOpen(true);
+      }
+   };
+
+   const handleApplyImageAlt = () => {
+      if (!editor) return;
+      editor.chain().focus().updateAttributes('image', { alt: imageAltInput }).run();
+      setImageModalOpen(false);
+   };
+
+   const handleApplyYoutube = () => {
+      if (!editor || !videoUrlInput) return;
+      const url = videoUrlInput.trim();
+      
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+         editor.chain().focus().setYoutubeVideo({ src: url }).run();
+      } else if (url.includes('instagram.com')) {
+         const embedUrl = url.endsWith('/') ? url + 'embed' : url + '/embed';
+         editor.chain().focus().insertContent({ type: 'socialEmbed', attrs: { src: embedUrl, platform: 'instagram' } }).run();
+      } else if (url.includes('facebook.com')) {
+         const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=0&width=560`;
+         editor.chain().focus().insertContent({ type: 'socialEmbed', attrs: { src: embedUrl, platform: 'facebook' } }).run();
+      } else if (url.includes('twitter.com') || url.includes('x.com')) {
+         const tweetId = url.split('/').pop()?.split('?')[0];
+         const embedUrl = `https://platform.twitter.com/embed/Tweet.html?id=${tweetId}`;
+         editor.chain().focus().insertContent({ type: 'socialEmbed', attrs: { src: embedUrl, platform: 'twitter' } }).run();
+      } else {
+         editor.chain().focus().insertContent({ type: 'socialEmbed', attrs: { src: url, platform: 'generic' } }).run();
+      }
+      
+      setVideoModalOpen(false);
+      setVideoUrlInput('');
+   };
 
    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
@@ -119,19 +531,55 @@ export default function PostForm({ post }: PostFormProps) {
       try {
          const result = await handleUpload(formData);
          if (result.success && result.url && editor) {
-            const alt = window.prompt('Enter SEO Alt Text', file.name.split('.')[0]);
-            editor.chain().focus().setImage({ src: result.url, alt: alt || '' }).run();
+            editor.chain().focus().setImage({ src: result.url, alt: '' }).run();
+            setTimeout(() => {
+               handleOpenImageModal();
+            }, 100);
          }
       } catch (error) { console.error('Upload failed:', error); }
+   };
+
+   const handleCoverUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+         const result = await handleUpload(formData);
+         if (result.success && result.url) {
+            setCoverImage(result.url);
+         }
+      } catch (error) { console.error('Cover upload failed:', error); }
+   };
+
+   const handleColorChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const color = event.target.value;
+      if (color && editor) {
+         editor.chain().focus().setColor(color).run();
+      }
+   };
+
+   const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+         const result = await handleUpload(formData);
+         if (result.success && result.url && editor) {
+            editor.chain().focus().insertContent({ type: 'video', attrs: { src: result.url } }).run();
+         }
+      } catch (error) { console.error('Video upload failed:', error); }
    };
 
    useEffect(() => {
       setMounted(true);
       const style = document.createElement('style');
       style.innerHTML = `
-      .ProseMirror { outline: none !important; min-height: 800px; padding: 20px; font-size: 18px; line-height: 1.8; color: #1e293b; }
+      .ProseMirror { outline: none !important; min-height: 800px; font-size: 19px; line-height: 1.8; color: #1e293b; transition: all 0.3s ease; }
       .ProseMirror p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; color: #94a3b8; pointer-events: none; height: 0; font-style: italic; }
       .sovereign-editor-v5-fixed * { box-sizing: border-box; }
+      .prose-container { width: 100%; }
     `;
       document.head.appendChild(style);
       return () => { if (document.head.contains(style)) document.head.removeChild(style); };
@@ -139,11 +587,12 @@ export default function PostForm({ post }: PostFormProps) {
 
    const editor = useEditor({
       extensions: [
-         StarterKit.configure({ heading: { levels: [2, 3, 4] } }),
-         Underline, Link.configure({ openOnClick: false }), Image,
+         StarterKit.configure({ heading: { levels: [1, 2, 3, 4] } }),
+         Image, Link.configure({ openOnClick: false }), Underline,
          Table.configure({ resizable: true }), TableRow, TableHeader, TableCell,
          CharacterCount, Typography, Highlight, TextAlign.configure({ types: ['heading', 'paragraph'] }),
-         TaskList, TaskItem.configure({ nested: true }), Subscript, Superscript, TextStyle, Color,
+         TaskList, TaskItem.configure({ nested: true }), Subscript, Superscript, 
+         TextStyle, Color, FontSize, Youtube.configure({ width: 840, height: 480, HTMLAttributes: { style: 'border-radius: 16px; margin: 24px 0; max-width: 100%; height: auto; aspect-ratio: 16/9;' } }), Video, SocialEmbed, ImageSlider, FaqBlock,
          Placeholder.configure({ placeholder: 'Start your story or type / for commands...' }),
       ],
       content: post?.content || '',
@@ -156,8 +605,25 @@ export default function PostForm({ post }: PostFormProps) {
          analyzeSnippetPotential(text, html);
          auditVisualHealth(html);
          calculateHelpfulScore(text, html);
+         syncFaqsFromEditor(html);
       },
    });
+
+   const syncFaqsFromEditor = (html: string) => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const faqBlocks = Array.from(doc.querySelectorAll('div[data-faq-block]'));
+      let allFaqs: { question: string; answer: string }[] = [];
+      faqBlocks.forEach(block => {
+         try {
+            const items = JSON.parse(block.getAttribute('data-faqs') || '[]');
+            allFaqs = [...allFaqs, ...items];
+         } catch (e) {}
+      });
+      if (allFaqs.length > 0) {
+         setFaqs(allFaqs);
+      }
+   };
 
    const calculateHelpfulScore = (text: string, html: string) => {
       let score = 70;
@@ -229,7 +695,11 @@ export default function PostForm({ post }: PostFormProps) {
             slug: slug || title.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-'),
             content: editor.getHTML(),
             metaDescription,
-            seoTitle, ogTitle, ogDescription, canonicalUrl,
+            excerpt: excerpt || metaDescription || title,
+            coverImage,
+            authorImage,
+            authorSocials,
+            seoTitle, ogTitle, ogDescription, canonicalUrl, keywords,
             category, tags, faqs,
             published,
             date: post?.date || format(new Date(), 'yyyy-MM-dd'),
@@ -253,23 +723,159 @@ export default function PostForm({ post }: PostFormProps) {
          <AnimatePresence>
             {distractionFree && (
                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={deepWorkOverlayStyle}>
-                  <div style={{ maxWidth: '850px', width: '100%', padding: '80px', height: '100%', overflowY: 'auto' }}>
-                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '80px' }}>
-                        <button onClick={() => setDistractionFree(false)} style={exitDeepWorkStyle}><Minimize2 size={18} /> Resume Controls</button>
-                     </div>
-                     <textarea placeholder="The Ultimate Headline..." value={title} onChange={(e) => setTitle(e.target.value)} style={deepWorkTitleStyle} rows={2} />
+                  <div style={{ width: '100%', padding: '0 0 100px 0', height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#fff' }}>
+                     <div style={{ width: '100%', maxWidth: '1000px', marginTop: '40px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+                         <button onClick={() => setDistractionFree(false)} style={exitDeepWorkStyle}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px' }}><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                            Exit Deep Work
+                         </button>
+                      </div>
+
+                      {/* Full-Feature Sticky Toolbar for Deep Work */}
+                      <div style={{ ...floatingToolbarStyle, top: '0', marginBottom: '40px', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '12px 24px', justifyContent: 'center' }}>
+                         {/* History Group */}
+                         <div style={{ display: 'flex', gap: '4px' }}>
+                            <SovereignToolBtn onClick={() => editor?.chain().focus().undo().run()} title="Undo">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+                            </SovereignToolBtn>
+                            <SovereignToolBtn onClick={() => editor?.chain().focus().redo().run()} title="Redo">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
+                            </SovereignToolBtn>
+                         </div>
+                         <div style={toolDivider} />
+
+                         {/* Formatting Group */}
+                         <div style={{ display: 'flex', gap: '4px' }}>
+                            <SovereignToolBtn onClick={() => editor?.chain().focus().toggleBold().run()} active={editor?.isActive('bold')} title="Bold">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
+                            </SovereignToolBtn>
+                            <SovereignToolBtn onClick={() => editor?.chain().focus().toggleItalic().run()} active={editor?.isActive('italic')} title="Italic">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
+                            </SovereignToolBtn>
+                            <SovereignToolBtn onClick={() => editor?.chain().focus().toggleUnderline().run()} active={editor?.isActive('underline')} title="Underline">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg>
+                            </SovereignToolBtn>
+                            <SovereignToolBtn onClick={() => editor?.chain().focus().toggleStrike().run()} active={editor?.isActive('strike')} title="Strikethrough">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><line x1="5" y1="12" x2="19" y2="12"/><path d="M16 4h-7a4 4 0 0 0-4 4 4 4 0 0 0 4 4h7a4 4 0 0 1 4 4 4 4 0 0 1-4 4h-7"/></svg>
+                            </SovereignToolBtn>
+                         </div>
+                         <div style={toolDivider} />
+
+                         {/* Structure Group */}
+                         <div style={headerSelectWrapper}>
+                            <select 
+                               onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val === 'p') editor?.chain().focus().setParagraph().run();
+                                  else editor?.chain().focus().toggleHeading({ level: parseInt(val) as any }).run();
+                               }}
+                               value={editor?.isActive('heading', { level: 1 }) ? '1' : editor?.isActive('heading', { level: 2 }) ? '2' : editor?.isActive('heading', { level: 3 }) ? '3' : editor?.isActive('heading', { level: 4 }) ? '4' : 'p'}
+                               style={headerSelectStyle}
+                            >
+                               <option value="p">Normal</option>
+                               <option value="1">Major Heading</option>
+                               <option value="2">Heading</option>
+                               <option value="3">Sub-heading</option>
+                               <option value="4">Minor Heading</option>
+                            </select>
+                            <div style={{ width: '1px', height: '16px', background: '#e2e8f0', margin: '0 8px' }} />
+                            <select 
+                               onChange={(e) => {
+                                  const size = e.target.value;
+                                  editor?.chain().focus().setMark('textStyle', { fontSize: size }).run();
+                               }}
+                               style={{ ...headerSelectStyle, width: '60px' }}
+                            >
+                               <option value="16px">Size</option>
+                               {['12px', '14px', '16px', '18px', '20px', '24px', '30px', '36px', '48px', '60px', '72px'].map(size => (
+                                  <option key={size} value={size}>{size}</option>
+                               ))}
+                            </select>
+                         </div>
+                         <div style={toolDivider} />
+
+                         {/* Alignment Group */}
+                         <div style={{ display: 'flex', gap: '4px' }}>
+                            <SovereignToolBtn onClick={() => editor?.chain().focus().setTextAlign('left').run()} active={editor?.isActive({ textAlign: 'left' })} title="Left Align">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+                            </SovereignToolBtn>
+                            <SovereignToolBtn onClick={() => editor?.chain().focus().setTextAlign('center').run()} active={editor?.isActive({ textAlign: 'center' })} title="Center Align">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg>
+                            </SovereignToolBtn>
+                            <SovereignToolBtn onClick={() => editor?.chain().focus().setTextAlign('right').run()} active={editor?.isActive({ textAlign: 'right' })} title="Right Align">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>
+                            </SovereignToolBtn>
+                         </div>
+                         <div style={toolDivider} />
+
+                         {/* Lists Group */}
+                         <div style={{ display: 'flex', gap: '4px' }}>
+                            <SovereignToolBtn onClick={() => editor?.chain().focus().toggleBulletList().run()} active={editor?.isActive('bulletList')} title="Bullet List">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                            </SovereignToolBtn>
+                            <SovereignToolBtn onClick={() => editor?.chain().focus().toggleOrderedList().run()} active={editor?.isActive('orderedList')} title="Numbered List">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+                            </SovereignToolBtn>
+                         </div>
+                         <div style={toolDivider} />
+
+                         {/* Inserts & Colors */}
+                         <div style={{ display: 'flex', gap: '4px' }}>
+                            <SovereignToolBtn onClick={() => colorInputRef.current?.click()} title="Text Color">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M4 20h16"/><path d="m6 16 6-12 6 12"/><path d="M8 12h8"/></svg>
+                            </SovereignToolBtn>
+                            <SovereignToolBtn onClick={() => editor?.chain().focus().toggleHighlight().run()} active={editor?.isActive('highlight')} title="Text Background Color">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
+                            </SovereignToolBtn>
+                            <SovereignToolBtn onClick={() => setVideoModalOpen(true)} title="Video Portal">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m15 8-5 4 5 4V8Z"/><path d="M7 12h1"/></svg>
+                            </SovereignToolBtn>
+                            <SovereignToolBtn onClick={handleOpenLinkModal} active={editor?.isActive('link')} title="Insert Link">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                            </SovereignToolBtn>
+                         </div>
+                         <div style={toolDivider} />
+
+                         <div style={{ display: 'flex', gap: '4px' }}>
+                            <SovereignToolBtn onClick={() => editor?.chain().focus().deleteTable().run()} title="Delete Table" color="#ef4444">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                            </SovereignToolBtn>
+                            <SovereignToolBtn onClick={() => editor?.chain().focus().addRowAfter().run()} title="Add Row">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                            </SovereignToolBtn>
+                            <SovereignToolBtn onClick={() => editor?.chain().focus().addColumnAfter().run()} title="Add Column">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+                            </SovereignToolBtn>
+                         </div>
+                         <div style={toolDivider} />
+
+                         <SovereignToolBtn onClick={() => editor?.chain().focus().unsetAllMarks().clearNodes().run()} title="Clear Formatting">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M21 7L7 21"/><path d="M7 7l14 14"/><path d="M3 11l5 5"/><path d="m13 16 5 5"/><path d="m8 3 5 5"/></svg>
+                         </SovereignToolBtn>
+                      </div>
+                     <input placeholder="Unlock the Sovereign Title..." value={title} onChange={(e) => setTitle(e.target.value)} style={{ ...deepWorkTitleStyle, fontSize: '48px', marginBottom: '40px' }} />
+
                      <EditorContent editor={editor} className="prose-container" />
+                     </div>
                   </div>
                </motion.div>
             )}
          </AnimatePresence>
 
-         <header style={headerStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-               <button onClick={() => router.back()} style={navIconStyle}><ChevronLeft size={20} /></button>
-               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <h1 style={headerTitleStyle}>{post ? 'Edit Sovereign Post' : 'New Sovereign Post'}</h1>
-                  <span style={versionTagStyle}>ChatWizs Sovereign Master Engine v3.0 • Active</span>
+         <div role="banner" style={headerStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1 }}>
+               <button onClick={() => router.back()} style={navIconStyle}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '20px', height: '20px' }}><path d="m15 18-6-6 6-6"/></svg>
+               </button>
+
+               <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                  <input 
+                     value={title} 
+                     onChange={e => setTitle(e.target.value)} 
+                     placeholder={post ? 'Edit Sovereign Post' : 'New Sovereign Post'} 
+                     style={{ ...headerTitleStyle, border: 'none', outline: 'none', background: 'transparent', width: '100%', padding: '0' }} 
+                  />
                </div>
             </div>
 
@@ -279,112 +885,200 @@ export default function PostForm({ post }: PostFormProps) {
                   <MiniScore label="HCU" value={helpfulScore} color="#10b981" />
                   <MiniScore label="SNIP" value={snippetScore} color="#8b5cf6" />
                </div>
-               <button onClick={() => setDistractionFree(true)} style={iconBtnStyle} title="Distraction Free Mode"><Maximize2 size={18} /></button>
-               <button onClick={() => setPreviewMode('google')} style={iconBtnStyle} title="Search Preview"><Eye size={18} /></button>
+               <button onClick={() => setDistractionFree(true)} style={iconBtnStyle} title="Distraction Free Mode">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+               </button>
+               <button onClick={() => setPreviewMode('google')} style={iconBtnStyle} title="Search Preview">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+               </button>
                <button onClick={() => handleSave(true)} disabled={isPending} style={publishBtnStyle}>{isPending ? 'Syncing...' : 'Deploy'}</button>
+
             </div>
-         </header>
+         </div>
 
          <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
             <main style={mainCanvasStyle}>
-               <div style={{ width: '100%', maxWidth: '850px' }}>
-                  
-                  {/* ✅ MASTER TOOLBAR (FIXED ICONS INTEGRATED IN FULL VERSION) */}
-                  <div style={floatingToolbarStyle}>
-                     <ToolbarBtn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={editor.isActive('bold') ? "#2563eb" : "#0f172a"} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
-                     </ToolbarBtn>
-                     <ToolbarBtn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={editor.isActive('italic') ? "#2563eb" : "#0f172a"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
-                     </ToolbarBtn>
-                     <ToolbarBtn onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={editor.isActive('underline') ? "#2563eb" : "#0f172a"} strokeWidth="2.5"><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg>
-                     </ToolbarBtn>
-                     <div style={toolDivider} />
-                     <div style={headerSelectWrapper}>
-                        <select 
-                           onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === 'p') editor.chain().focus().setParagraph().run();
-                              else editor.chain().focus().toggleHeading({ level: parseInt(val) as any }).run();
-                           }}
-                           value={editor.isActive('heading', { level: 2 }) ? '2' : editor.isActive('heading', { level: 3 }) ? '3' : 'p'}
-                           style={headerSelectStyle}
-                        >
-                           <option value="p">Body Text</option>
-                           <option value="2">Heading 2</option>
-                           <option value="3">Heading 3</option>
-                           <option value="4">Heading 4</option>
-                        </select>
-                     </div>
-                     <div style={toolDivider} />
-                     <ToolbarBtn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={editor.isActive('bulletList') ? "#2563eb" : "#0f172a"} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-                     </ToolbarBtn>
-                     <ToolbarBtn onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3 }).run()}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
-                     </ToolbarBtn>
-                     <ToolbarBtn onClick={() => fileInputRef.current?.click()}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                     </ToolbarBtn>
-                     <input type="file" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} accept="image/*" />
-                     <ToolbarBtn onClick={() => {
-                        const url = window.prompt('Enter Link URL:');
-                        if (url) editor.chain().focus().setLink({ href: url }).run();
-                     }} active={editor.isActive('link')}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={editor.isActive('link') ? "#2563eb" : "#0f172a"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                     </ToolbarBtn>
-                     <div style={toolDivider} />
-                     <ToolbarBtn onClick={() => setActiveTab('guardian')} title="Run AI Audit">
-                        <Sparkles size={16} color="#8b5cf6" />
-                     </ToolbarBtn>
-                  </div>
+                <div style={floatingToolbarStyle}>
+                   {/* History Group */}
+                   <div style={{ display: 'flex', gap: '4px', maxWidth: '1000px', margin: '0 auto', width: '100%', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                         <SovereignToolBtn onClick={() => editor.chain().focus().undo().run()} title="Undo">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+                         </SovereignToolBtn>
+                         <SovereignToolBtn onClick={() => editor.chain().focus().redo().run()} title="Redo">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
+                         </SovereignToolBtn>
+                      </div>
+                      <div style={toolDivider} />
 
-                  <textarea 
-                     placeholder="Unlock the Sovereign Title..." 
-                     value={title} 
-                     onChange={e => setTitle(e.target.value)} 
-                     style={titleInputStyle} 
-                     rows={1} 
-                  />
-                  
-                  <div style={editorWrapperStyle}>
-                     <BubbleMenu editor={editor}>
-                        <div style={bubbleMenuStyle}>
-                           <ToolbarBtn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')}>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="3"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
-                           </ToolbarBtn>
-                           <ToolbarBtn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')}>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2.5"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
-                           </ToolbarBtn>
-                           <ToolbarBtn onClick={() => editor.chain().focus().toggleHighlight().run()} active={editor.isActive('highlight')}>
-                              <Highlighter size={14} color="#0f172a" />
-                           </ToolbarBtn>
-                        </div>
+                      {/* Formatting Group */}
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                         <SovereignToolBtn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Bold">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
+                         </SovereignToolBtn>
+                         <SovereignToolBtn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} title="Italic">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
+                         </SovereignToolBtn>
+                         <SovereignToolBtn onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')} title="Underline">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg>
+                         </SovereignToolBtn>
+                         <SovereignToolBtn onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive('strike')} title="Strikethrough">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><line x1="5" y1="12" x2="19" y2="12"/><path d="M16 4h-7a4 4 0 0 0-4 4 4 4 0 0 0 4 4h7a4 4 0 0 1 4 4 4 4 0 0 1-4 4h-7"/></svg>
+                         </SovereignToolBtn>
+                         <SovereignToolBtn onClick={() => colorInputRef.current?.click()} title="Text Color">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M4 20h16"/><path d="m6 16 6-12 6 12"/><path d="M8 12h8"/></svg>
+                         </SovereignToolBtn>
+                         <SovereignToolBtn onClick={() => editor.chain().focus().toggleHighlight().run()} active={editor.isActive('highlight')} title="Text Highlight">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
+                         </SovereignToolBtn>
+                      </div>
+                      <div style={toolDivider} />
+
+                      {/* Structure & Size Group */}
+                      <div style={headerSelectWrapper}>
+                         <select 
+                            onChange={(e) => {
+                               const val = e.target.value;
+                               if (val === 'p') editor.chain().focus().setParagraph().run();
+                               else editor.chain().focus().toggleHeading({ level: parseInt(val) as any }).run();
+                            }}
+                            value={editor.isActive('heading', { level: 1 }) ? '1' : editor.isActive('heading', { level: 2 }) ? '2' : editor.isActive('heading', { level: 3 }) ? '3' : editor.isActive('heading', { level: 4 }) ? '4' : 'p'}
+                            style={headerSelectStyle}
+                         >
+                            <option value="p">Normal</option>
+                            <option value="1">Major Heading</option>
+                            <option value="2">Heading</option>
+                            <option value="3">Sub-heading</option>
+                            <option value="4">Minor Heading</option>
+                         </select>
+                         <div style={{ width: '1px', height: '16px', background: '#e2e8f0', margin: '0 8px' }} />
+                         <select 
+                            onChange={(e) => {
+                               const size = e.target.value;
+                               editor.chain().focus().setMark('textStyle', { fontSize: size }).run();
+                            }}
+                            style={{ ...headerSelectStyle, width: '60px' }}
+                         >
+                            <option value="16px">Size</option>
+                            {['12px', '14px', '16px', '18px', '20px', '24px', '30px', '36px', '48px', '60px', '72px'].map(size => (
+                               <option key={size} value={size}>{size}</option>
+                            ))}
+                         </select>
+                      </div>
+                      <div style={toolDivider} />
+
+                      {/* Alignment & Lists */}
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                         <SovereignToolBtn onClick={() => editor.chain().focus().setTextAlign('left').run()} active={editor.isActive({ textAlign: 'left' })} title="Left Align">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+                         </SovereignToolBtn>
+                         <SovereignToolBtn onClick={() => editor.chain().focus().setTextAlign('center').run()} active={editor.isActive({ textAlign: 'center' })} title="Center Align">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg>
+                         </SovereignToolBtn>
+                         <SovereignToolBtn onClick={() => editor.chain().focus().setTextAlign('right').run()} active={editor.isActive({ textAlign: 'right' })} title="Right Align">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>
+                         </SovereignToolBtn>
+                         <div style={{ width: '1px', height: '16px', background: '#e2e8f0', margin: '0 4px' }} />
+                         <SovereignToolBtn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Bullet List">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                         </SovereignToolBtn>
+                      </div>
+                      <div style={toolDivider} />
+
+                      {/* Inserts & Tables */}
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                         <SovereignToolBtn onClick={handleOpenLinkModal} active={editor.isActive('link')} title="Insert Link">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                         </SovereignToolBtn>
+                         <SovereignToolBtn onClick={() => fileInputRef.current?.click()} title="Insert Image">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                         </SovereignToolBtn>
+                         <SovereignToolBtn onClick={handleOpenSliderModal} title="Insert Image Slider">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+                         </SovereignToolBtn>
+                         <SovereignToolBtn onClick={handleOpenFaqModal} title="Insert FAQ Schema Block">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                         </SovereignToolBtn>
+                         <SovereignToolBtn onClick={() => setVideoModalOpen(true)} title="Video Portal">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m15 8-5 4 5 4V8Z"/><path d="M7 12h1"/></svg>
+                         </SovereignToolBtn>
+                         <SovereignToolBtn onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} title="Blockquote">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1 0 2.5 0 5-2 5"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1 0 2.5 0 5-2 5"/></svg>
+                         </SovereignToolBtn>
+                      </div>
+                      <div style={toolDivider} />
+
+                      {/* Advanced Tables */}
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                         <SovereignToolBtn onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3 }).run()} title="Insert Table">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+                         </SovereignToolBtn>
+                         <SovereignToolBtn onClick={() => editor.chain().focus().addRowAfter().run()} title="Add Row">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                         </SovereignToolBtn>
+                         <SovereignToolBtn onClick={() => editor.chain().focus().addColumnAfter().run()} title="Add Column">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+                         </SovereignToolBtn>
+                         <SovereignToolBtn onClick={() => editor.chain().focus().deleteTable().run()} title="Delete Table" color="#ef4444">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                         </SovereignToolBtn>
+                      </div>
+                      <div style={toolDivider} />
+
+                      <SovereignToolBtn onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} title="Clear Formatting">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M21 7L7 21"/><path d="M7 7l14 14"/><path d="M3 11l5 5"/><path d="m13 16 5 5"/><path d="m8 3 5 5"/></svg>
+                      </SovereignToolBtn>
+                      <SovereignToolBtn onClick={() => setActiveTab('guardian')} title="AI Shield" color="#8b5cf6">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', flexShrink: 0 }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+                      </SovereignToolBtn>
+                      <input type="file" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} accept="image/*" />
+                      <input type="file" ref={videoInputRef} onChange={handleVideoUpload} style={{ display: 'none' }} accept="video/*" />
+                      <input type="color" ref={colorInputRef} onChange={handleColorChange} style={{ display: 'none' }} />
+                      <input type="file" ref={sliderInputRef} onChange={handleSliderImageUpload} multiple style={{ display: 'none' }} accept="image/*" />
+                   </div>
+                </div>
+
+               <div style={editorWrapperStyle}>
+                  <BubbleMenu editor={editor} shouldShow={({ editor }) => editor.isActive('image') || editor.isActive('imageSlider') || editor.isActive('faqBlock')}>
+                         <div style={bubbleMenuStyle}>
+                            {editor.isActive('imageSlider') ? (
+                               <SovereignToolBtn onClick={handleOpenSliderModal} title="Slider Settings">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+                                  <span style={{ fontSize: '11px', fontWeight: 700, marginLeft: '6px' }}>EDIT SLIDER</span>
+                               </SovereignToolBtn>
+                            ) : editor.isActive('faqBlock') ? (
+                               <SovereignToolBtn onClick={handleOpenFaqModal} title="FAQ Settings">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                                  <span style={{ fontSize: '11px', fontWeight: 700, marginLeft: '6px' }}>EDIT FAQ</span>
+                               </SovereignToolBtn>
+                            ) : (
+                               <SovereignToolBtn onClick={handleOpenImageModal} title="Image Settings">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                                  <span style={{ fontSize: '11px', fontWeight: 700, marginLeft: '6px' }}>ALT TEXT</span>
+                               </SovereignToolBtn>
+                            )}
+                         </div>
                      </BubbleMenu>
-                     
-                     <FloatingMenu editor={editor}>
-                        <div style={floatingMenuStyle}>
-                           <button onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} style={fMenuBtn}>H2</button>
-                           <button onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} style={fMenuBtn}>H3</button>
-                           <button onClick={() => editor.chain().focus().toggleBulletList().run()} style={fMenuBtn}>List</button>
-                        </div>
-                     </FloatingMenu>
-
                      <EditorContent editor={editor} />
-                  </div>
-               </div>
-            </main>
+                   </div>
+             </main>
 
             <aside style={intelSidebarStyle}>
-               <div style={intelTabsStyle}>
-                  <TabBtn active={activeTab === 'editor'} onClick={() => setActiveTab('editor')} icon={<BarChart size={14} />} label="Analysis" />
-                  <TabBtn active={activeTab === 'snippets'} onClick={() => setActiveTab('snippets')} icon={<Target size={14} />} label="Snippets" />
-                  <TabBtn active={activeTab === 'eeat'} onClick={() => setActiveTab('eeat')} icon={<Award size={14} />} label="EEAT" />
-                  <TabBtn active={activeTab === 'schema'} onClick={() => setActiveTab('schema')} icon={<FileJson size={14} />} label="Schema" />
-                  <TabBtn active={activeTab === 'strategy'} onClick={() => setActiveTab('strategy')} icon={<Brain size={14} />} label="Strategy" />
-                  <TabBtn active={activeTab === 'guardian'} onClick={() => setActiveTab('guardian')} icon={<ShieldCheck size={14} />} label="Guardian" />
-                  <TabBtn active={activeTab === 'meta'} onClick={() => setActiveTab('meta')} icon={<Search size={14} />} label="Meta" />
+               <div style={{ padding: '24px 24px 0 24px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', letterSpacing: '1px', marginBottom: '12px' }}>INTEL MODULES</div>
+                   <div style={intelTabsStyle}>
+                     <TabBtn active={activeTab === 'editor'} onClick={() => setActiveTab('editor')} icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>} label="Audit" status={seoScore > 80 ? 'success' : 'warning'} />
+                     <TabBtn active={activeTab === 'snippets'} onClick={() => setActiveTab('snippets')} icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>} label="Snippets" status={snippetScore > 70 ? 'success' : 'neutral'} />
+                     <TabBtn active={activeTab === 'strategy'} onClick={() => setActiveTab('strategy')} icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.54Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.54Z"/></svg>} label="Strategy" status="neutral" />
+                     <TabBtn active={activeTab === 'meta'} onClick={() => setActiveTab('meta')} icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>} label="Meta" status={seoTitle ? 'success' : 'warning'} />
+
+                     
+                     <TabBtn active={activeTab === 'eeat'} onClick={() => setActiveTab('eeat')} icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/><circle cx="12" cy="8" r="6"/></svg>} label="EEAT" status={factCheckedBy ? 'success' : 'warning'} />
+                     <TabBtn active={activeTab === 'guardian'} onClick={() => setActiveTab('guardian')} icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>} label="Shield" status="success" />
+                     <TabBtn active={activeTab === 'schema'} onClick={() => setActiveTab('schema')} icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 12a1 1 0 0 0-1 1v1a1 1 0 0 1-1 1 1 1 0 0 1 1 1v1a1 1 0 0 0 1 1"/><path d="M14 18a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1 1 1 0 0 1-1-1v-1a1 1 0 0 0-1-1"/></svg>} label="Schema" status={faqs.length > 0 ? 'success' : 'neutral'} />
+                     <TabBtn active={activeTab === 'seo'} onClick={() => setActiveTab('seo')} icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>} label="Turbo" status="neutral" />
+
+                  </div>
                </div>
 
                <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
@@ -410,10 +1104,11 @@ export default function PostForm({ post }: PostFormProps) {
 
                            <h3 style={sidebarHeadingStyle}>Technical SEO Tips</h3>
                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                              {seoScore < 100 && <SeoTip icon={<AlertCircle size={14} />} text="Increase content length to 1500+ words." type="warning" />}
-                              {visualHealth.altMissing > 0 && <SeoTip icon={<AlertTriangle size={14} />} text={`${visualHealth.altMissing} images missing ALT text.`} type="error" />}
-                              {helpfulScore >= 80 && <SeoTip icon={<CheckCircle size={14} />} text="Content shows high human-gain value." type="success" />}
+                              {seoScore < 100 && <SeoTip icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>} text="Increase content length to 1500+ words." type="warning" />}
+                              {visualHealth.altMissing > 0 && <SeoTip icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>} text={`${visualHealth.altMissing} images missing ALT text.`} type="error" />}
+                              {helpfulScore >= 80 && <SeoTip icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>} text="Content shows high human-gain value." type="success" />}
                            </div>
+
 
                            <h3 style={sidebarHeadingStyle}>Document Outline</h3>
                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -437,7 +1132,8 @@ export default function PostForm({ post }: PostFormProps) {
                               <p style={{ fontSize: '12px', color: '#64748b', lineHeight: '1.5' }}>Optimizing for Position Zero increases CTR by 30%.</p>
                            </div>
                            <h4 style={{ fontSize: '11px', fontWeight: 900, marginBottom: '12px' }}>OPTIMIZATION TIPS</h4>
-                           {snippetTips.map((tip, i) => <div key={i} style={tipRowStyle}><CheckCircle size={12} color="#10b981" /> {tip}</div>)}
+                           {snippetTips.map((tip, i) => <div key={i} style={tipRowStyle}><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '12px', height: '12px', color: '#10b981' }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> {tip}</div>)}
+
                         </motion.div>
                      )}
 
@@ -447,6 +1143,12 @@ export default function PostForm({ post }: PostFormProps) {
                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                               <InputGroup label="FACT CHECKED BY" value={factCheckedBy} onChange={setFactCheckedBy} placeholder="e.g. Dr. Sarah Connor" />
                               <InputGroup label="FACT CHECKER ROLE" value={factCheckerRole} onChange={setFactCheckerRole} placeholder="e.g. Senior Medical Editor" />
+                              
+                              <div style={sidebarHeadingStyle}>Author Socials (EEAT)</div>
+                              <InputGroup label="TWITTER" value={authorSocials.twitter || ''} onChange={(val: string) => setAuthorSocials({...authorSocials, twitter: val})} placeholder="https://twitter.com/..." />
+                              <InputGroup label="LINKEDIN" value={authorSocials.linkedin || ''} onChange={(val: string) => setAuthorSocials({...authorSocials, linkedin: val})} placeholder="https://linkedin.com/in/..." />
+                              <InputGroup label="WEBSITE" value={authorSocials.website || ''} onChange={(val: string) => setAuthorSocials({...authorSocials, website: val})} placeholder="https://..." />
+
                               <div style={eeatCheckStyle}>
                                  <input type="checkbox" checked={eeatChecklist.credentialsIncluded} onChange={e => setEeatChecklist({...eeatChecklist, credentialsIncluded: e.target.checked})} />
                                  <span>AI-Assisted (Disclosure Required)</span>
@@ -493,7 +1195,7 @@ export default function PostForm({ post }: PostFormProps) {
                         <motion.div key="guardian" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                            <h3 style={sidebarHeadingStyle}>Sovereign Shield</h3>
                            <div style={guardianCard}>
-                              <Fingerprint size={32} color="#2563eb" />
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '32px', height: '32px', color: '#2563eb' }}><path d="M2 12a10 10 0 0 1 20 0"/><path d="M7 12a5 5 0 0 1 5-5"/><path d="M12 20a8 8 0 0 1-8-8"/><path d="M12 20a8 8 0 0 0 8-8"/><path d="M12 12a2.5 2.5 0 0 1 5 0"/><path d="M12 12a2.5 2.5 0 0 1-5 0"/><path d="M20 12a8 8 0 0 0-8-8"/><path d="M22 12a10 10 0 0 0-10-10"/><path d="M2 12a10 10 0 0 0 10 10"/><path d="M4 12a8 8 0 0 0 8 8"/></svg>
                               <h4 style={{ margin: '10px 0 5px' }}>Content Signature</h4>
                               <p style={{ fontSize: '11px', color: '#64748b' }}>Verified Human-First Content</p>
                            </div>
@@ -508,40 +1210,402 @@ export default function PostForm({ post }: PostFormProps) {
 
                      {activeTab === 'meta' && (
                         <motion.div key="meta" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                           <h3 style={sidebarHeadingStyle}>Metadata Override</h3>
-                           <InputGroup label="SEO TITLE" value={seoTitle} onChange={setSeoTitle} placeholder="Force a specific title tag" />
-                           <div style={{ height: '15px' }} />
-                           <InputGroup label="OG TITLE" value={ogTitle} onChange={setOgTitle} placeholder="Social media title" />
-                           <div style={{ height: '15px' }} />
-                           <label style={metaLabelStyle}>OG DESCRIPTION</label>
-                           <textarea value={ogDescription} onChange={e => setOgDescription(e.target.value)} style={metaTextAreaStyle} />
+                           <h3 style={sidebarHeadingStyle}>Search Engine Listing</h3>
+                           <div style={hcuCardStyle}>
+                              <button onClick={() => setPreviewMode('google')} style={{ ...addNodeBtn, background: '#f8fafc', marginBottom: '15px', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Launch SERP Simulator
+                              </button>
+                              <InputGroup label="SEO TITLE" value={seoTitle} onChange={setSeoTitle} placeholder="Target Keyword in Title" />
+                              <div style={{ height: '15px' }} />
+                              <label style={metaLabelStyle}>META DESCRIPTION</label>
+                              <textarea value={metaDescription} onChange={e => setMetaDescription(e.target.value)} style={metaTextAreaStyle} placeholder="150-160 characters for optimal CTR" />
+                              <div style={{ height: '15px' }} />
+                              <label style={metaLabelStyle}>EXCERPT (SHORT SUMMARY)</label>
+                              <textarea value={excerpt} onChange={e => setExcerpt(e.target.value)} style={metaTextAreaStyle} placeholder="Short summary for blog feed" />
+                           </div>
+
+                           <h3 style={sidebarHeadingStyle}>Visual Assets</h3>
+                           <div style={hcuCardStyle}>
+                              <label style={metaLabelStyle}>COVER IMAGE</label>
+                              {coverImage && (
+                                 <div style={{ position: 'relative', marginBottom: '10px' }}>
+                                    <img src={coverImage} alt="Cover" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '12px' }} />
+                                    <button onClick={() => setCoverImage('')} style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', padding: '4px', borderRadius: '6px', cursor: 'pointer' }}>
+                                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '12px', height: '12px' }}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                    </button>
+                                 </div>
+                              )}
+                              <button onClick={() => coverInputRef.current?.click()} style={{ ...addNodeBtn, background: '#fff', border: '1px dashed #cbd5e1' }}>{coverImage ? 'Change Cover Photo' : 'Upload Cover Photo'}</button>
+                              <input type="file" ref={coverInputRef} onChange={handleCoverUpload} style={{ display: 'none' }} accept="image/*" />
+                              <div style={{ height: '15px' }} />
+                              <InputGroup label="AUTHOR IMAGE URL" value={authorImage} onChange={setAuthorImage} placeholder="https://..." />
+                           </div>
+
+                           <h3 style={sidebarHeadingStyle}>Keywords & Indexing</h3>
+                           <div style={hcuCardStyle}>
+                              <InputGroup label="FOCUS KEYWORD" value={focusKeyword} onChange={setFocusKeyword} placeholder="Primary search term" />
+                              <div style={{ height: '15px' }} />
+                              <InputGroup label="KEYWORDS (TAGS)" value={keywords} onChange={setKeywords} placeholder="Comma separated LSI keywords" />
+                              <div style={{ height: '15px' }} />
+                              <InputGroup label="CANONICAL URL" value={canonicalUrl} onChange={setCanonicalUrl} placeholder="Avoid duplicate content issues" />
+                           </div>
+
+                           <h3 style={sidebarHeadingStyle}>Social Media (Open Graph)</h3>
+                           <div style={hcuCardStyle}>
+                              <InputGroup label="OG TITLE" value={ogTitle} onChange={setOgTitle} placeholder="Catchy title for social shares" />
+                              <div style={{ height: '15px' }} />
+                              <label style={metaLabelStyle}>OG DESCRIPTION</label>
+                              <textarea value={ogDescription} onChange={e => setOgDescription(e.target.value)} style={metaTextAreaStyle} placeholder="Display on Facebook/Twitter" />
+                           </div>
+                        </motion.div>
+                     )}
+
+                     {activeTab === 'seo' && (
+                        <motion.div key="seo" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                           <h3 style={sidebarHeadingStyle}>Turbo Indexing Engine</h3>
+                           <div style={hcuCardStyle}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '20px', height: '20px', color: '#f59e0b', fill: '#f59e0b' }}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                                 <span style={{ fontWeight: 800, fontSize: '14px' }}>INSTANT INDEXING</span>
+                              </div>
+                              <p style={{ fontSize: '11px', color: '#64748b', marginBottom: '15px' }}>Ping Google Search Console API immediately upon deployment.</p>
+                              <button 
+                                 onClick={() => {
+                                    setIsIndexing(true);
+                                    setTimeout(() => {
+                                       setIsIndexing(false);
+                                       setIndexStatus('success');
+                                       setTimeout(() => setIndexStatus('idle'), 3000);
+                                    }, 2000);
+                                 }}
+                                 disabled={isIndexing || indexStatus === 'success'}
+                                 style={{ 
+                                    ...addNodeBtn, 
+                                    background: indexStatus === 'success' ? '#f0fdf4' : (isIndexing ? '#f1f5f9' : '#fffbeb'), 
+                                    border: `1px solid ${indexStatus === 'success' ? '#dcfce7' : (isIndexing ? '#e2e8f0' : '#fef3c7')}`, 
+                                    color: indexStatus === 'success' ? '#10b981' : (isIndexing ? '#94a3b8' : '#b45309'),
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                 }}
+                              >
+                                 {isIndexing ? (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                       <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} style={{ display: 'flex' }}>
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                                       </motion.div>
+                                       Pinging GSC API...
+                                    </span>
+                                 ) : (
+                                    indexStatus === 'success' ? (
+                                       <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Ping Success!
+                                       </span>
+                                    ) : 'Request Priority Crawl'
+                                 )}
+                              </button>
+                           </div>
+
+                           <h3 style={sidebarHeadingStyle}>Performance Tuning</h3>
+                           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                              <div style={eeatCheckStyle}>
+                                 <input type="checkbox" defaultChecked />
+                                 <span>Lazy Load Visual Assets</span>
+                              </div>
+                              <div style={eeatCheckStyle}>
+                                 <input type="checkbox" defaultChecked />
+                                 <span>Preload Critical Fonts</span>
+                              </div>
+                              <div style={eeatCheckStyle}>
+                                 <input type="checkbox" />
+                                 <span>Enable Edge Caching (CDN)</span>
+                              </div>
+                           </div>
+
+                           <h3 style={sidebarHeadingStyle}>Search Priority</h3>
+                           <select style={metaSelectStyle}>
+                              <option>Normal (0.8)</option>
+                              <option>High (0.9)</option>
+                              <option>Critical (1.0)</option>
+                           </select>
                         </motion.div>
                      )}
                   </AnimatePresence>
                </div>
-            </aside>
-         </div>
+             </aside>
+          </div>
 
-         {/* Previews Modal */}
+         {/* FAQ Modal */}
          <AnimatePresence>
-            {previewMode !== 'none' && (
+            {faqModalOpen && (
                <div style={modalBackdropStyle}>
-                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={modalContentStyle}>
+                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ ...modalContentStyle, maxWidth: '650px' }}>
                      <div style={modalHeaderStyle}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                           <Search size={18} color="#2563eb" />
-                           <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Google SERP Simulation</h2>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', color: '#2563eb' }}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                           <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>FAQ Schema Editor</h2>
                         </div>
-                        <button onClick={() => setPreviewMode('none')} style={closeModalBtn}><X size={20} /></button>
+                        <button onClick={() => setFaqModalOpen(false)} style={closeModalBtn}>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '20px', height: '20px' }}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                     </div>
+                     <div style={{ padding: '20px', maxHeight: '60vh', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                           {tempFaqs.map((faq, idx) => (
+                              <div key={idx} style={{ padding: '16px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', position: 'relative' }}>
+                                 <button onClick={() => setTempFaqs(tempFaqs.filter((_, i) => i !== idx))} style={{ position: 'absolute', top: '12px', right: '12px', background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                                 </button>
+                                 <div style={{ marginBottom: '12px' }}>
+                                    <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', display: 'block', marginBottom: '6px' }}>QUESTION {idx + 1}</label>
+                                    <input 
+                                       value={faq.question} 
+                                       onChange={e => {
+                                          const next = [...tempFaqs];
+                                          next[idx].question = e.target.value;
+                                          setTempFaqs(next);
+                                       }}
+                                       placeholder="What is the main benefit of..."
+                                       style={{ ...metaInputStyle, background: '#fff' }}
+                                    />
+                                 </div>
+                                 <div>
+                                    <label style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', display: 'block', marginBottom: '6px' }}>ANSWER</label>
+                                    <textarea 
+                                       value={faq.answer} 
+                                       onChange={e => {
+                                          const next = [...tempFaqs];
+                                          next[idx].answer = e.target.value;
+                                          setTempFaqs(next);
+                                       }}
+                                       placeholder="Explain clearly and concisely..."
+                                       style={{ ...metaTextAreaStyle, background: '#fff', minHeight: '80px' }}
+                                    />
+                                 </div>
+                              </div>
+                           ))}
+                           <button 
+                              onClick={() => setTempFaqs([...tempFaqs, { question: '', answer: '' }])}
+                              style={{ ...addNodeBtn, padding: '12px', borderStyle: 'dashed', background: '#f8fafc' }}
+                           >
+                              + Add Another FAQ Item
+                           </button>
+                        </div>
+                     </div>
+                     <div style={{ padding: '12px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                        <button onClick={() => setFaqModalOpen(false)} style={{ ...closeModalBtn, background: '#fff', border: '1px solid #e2e8f0', padding: '6px 14px', fontSize: '12px', fontWeight: 600 }}>Cancel</button>
+                        <button onClick={handleApplyFaq} style={{ ...publishBtnStyle, flex: 0, padding: '6px 16px', fontSize: '12px', minWidth: 'max-content', whiteSpace: 'nowrap', color: '#ffffff' }}>{editor.isActive('faqBlock') ? 'Update FAQ Block' : 'Insert FAQ Block'}</button>
+                     </div>
+                  </motion.div>
+               </div>
+            )}
+         </AnimatePresence>
+
+         {/* Image Slider Modal */}
+         <AnimatePresence>
+            {sliderModalOpen && (
+               <div style={modalBackdropStyle}>
+                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ ...modalContentStyle, maxWidth: '600px' }}>
+                     <div style={modalHeaderStyle}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', color: '#2563eb' }}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+                           <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Image Slider Configuration</h2>
+                        </div>
+                        <button onClick={() => setSliderModalOpen(false)} style={closeModalBtn}>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '20px', height: '20px' }}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                     </div>
+                     <div style={{ padding: '20px', maxHeight: '60vh', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                           <h3 style={{ fontSize: '14px', fontWeight: 700 }}>Slider Images</h3>
+                           <button onClick={() => sliderInputRef.current?.click()} style={{ ...publishBtnStyle, padding: '6px 12px', fontSize: '12px', minWidth: 'auto' }}>+ Add Images</button>
+                        </div>
+                        
+                        {sliderImages.length === 0 ? (
+                           <div style={{ textAlign: 'center', padding: '24px', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
+                              <p style={{ color: '#64748b', fontSize: '12px', margin: 0 }}>No images added yet. Click Add Images to start building your slider.</p>
+                           </div>
+                        ) : (
+                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                              {sliderImages.map((img, idx) => (
+                                 <div key={idx} style={{ display: 'flex', gap: '10px', background: '#f8fafc', padding: '6px', borderRadius: '10px', border: '1px solid #e2e8f0', alignItems: 'center' }}>
+                                    <img src={img.src} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px' }} alt="thumb" />
+                                    <input 
+                                       placeholder="Alt Text (SEO)" 
+                                       value={img.alt} 
+                                       onChange={(e) => {
+                                          const newImgs = [...sliderImages];
+                                          newImgs[idx].alt = e.target.value;
+                                          setSliderImages(newImgs);
+                                       }}
+                                       style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', fontSize: '12px' }}
+                                    />
+                                    <button onClick={() => {
+                                       setSliderImages(sliderImages.filter((_, i) => i !== idx));
+                                    }} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center' }}>
+                                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                    </button>
+                                 </div>
+                              ))}
+                           </div>
+                        )}
+
+                        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                           <h3 style={{ fontSize: '13px', fontWeight: 700, margin: 0 }}>Slider Settings</h3>
+                           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                              <input type="checkbox" checked={sliderAutoScroll} onChange={e => setSliderAutoScroll(e.target.checked)} style={{ width: '14px', height: '14px', cursor: 'pointer' }} />
+                              Enable Auto-Scrolling
+                           </label>
+                           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                              <input type="checkbox" checked={sliderCenterZoom} onChange={e => setSliderCenterZoom(e.target.checked)} style={{ width: '14px', height: '14px', cursor: 'pointer' }} />
+                              Center Image Auto-Zoom Effect
+                           </label>
+                           <InputGroup label="TRANSITION SPEED (MS)" value={sliderSpeed.toString()} onChange={(val: string) => setSliderSpeed(parseInt(val) || 3000)} placeholder="e.g., 3000" />
+                        </div>
+                     </div>
+                     <div style={{ padding: '12px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                        <button onClick={() => setSliderModalOpen(false)} style={{ ...closeModalBtn, background: '#fff', border: '1px solid #e2e8f0', padding: '6px 14px', fontSize: '12px', fontWeight: 600 }}>Cancel</button>
+                        <button onClick={handleApplySlider} style={{ ...publishBtnStyle, flex: 0, padding: '6px 16px', fontSize: '12px', minWidth: 'max-content', whiteSpace: 'nowrap', color: '#ffffff' }}>Insert Slider</button>
+                     </div>
+                  </motion.div>
+               </div>
+            )}
+         </AnimatePresence>
+
+         {/* Custom Link Modal */}
+         <AnimatePresence>
+            {linkModalOpen && (
+               <div style={modalBackdropStyle}>
+                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ ...modalContentStyle, maxWidth: '450px' }}>
+                     <div style={modalHeaderStyle}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', color: '#2563eb' }}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                           <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Sovereign Link Editor</h2>
+                        </div>
+                        <button onClick={() => setLinkModalOpen(false)} style={closeModalBtn}>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '20px', height: '20px' }}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                     </div>
+                     <div style={{ padding: '30px' }}>
+                        <label style={metaLabelStyle}>DESTINATION URL</label>
+                        <input 
+                           autoFocus 
+                           value={linkInputUrl} 
+                           onChange={e => setLinkInputUrl(e.target.value)} 
+                           onKeyDown={e => e.key === 'Enter' && handleApplyLink()}
+                           placeholder="https://example.com" 
+                           style={{ ...metaInputStyle, background: '#f1f5f9', marginBottom: '20px' }} 
+                        />
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
+                           <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#475569' }}>
+                              <input type="checkbox" checked={linkOpenInNewTab} onChange={e => setLinkOpenInNewTab(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                              Open in a new window
+                           </label>
+                           <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#475569' }}>
+                              <input type="checkbox" checked={linkIsNoFollow} onChange={e => setLinkIsNoFollow(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                              Add 'rel=nofollow' (Search Engine optimization)
+                           </label>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                           <button onClick={handleApplyLink} style={{ ...publishBtnStyle, flex: 1, padding: '10px' }}>Apply Link</button>
+                           <button onClick={() => { setLinkInputUrl(''); handleApplyLink(); }} style={{ ...iconBtnStyle, padding: '10px 20px' }}>Remove</button>
+                        </div>
+                     </div>
+                  </motion.div>
+               </div>
+            )}
+         </AnimatePresence>
+
+         {/* Video Portal Modal */}
+         <AnimatePresence>
+            {videoModalOpen && (
+               <div style={modalBackdropStyle}>
+                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ ...modalContentStyle, maxWidth: '500px' }}>
+                     <div style={modalHeaderStyle}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', color: '#2563eb' }}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></svg>
+                           <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Social Intelligence Hub</h2>
+                        </div>
+                        <button onClick={() => setVideoModalOpen(false)} style={closeModalBtn}>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '20px', height: '20px' }}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
                      </div>
                      <div style={{ padding: '40px' }}>
-                        <div style={{ maxWidth: '600px' }}>
-                           <div style={{ fontSize: '14px', color: '#202124', marginBottom: '4px' }}>https://chatwizs.com › {slug || 'post-url'}</div>
-                           <div style={{ fontSize: '20px', color: '#1a0dab', fontWeight: 400, marginBottom: '4px', cursor: 'pointer' }}>{seoTitle || title || 'Post Title Preview'}</div>
-                           <div style={{ fontSize: '14px', color: '#4d5156', lineHeight: '1.5' }}>
-                              <span style={{ color: '#70757a' }}>{format(new Date(), 'MMM d, yyyy')} — </span>
-                              {metaDescription || 'Add a meta description to see how your post will look in Google search results. A good description increases click-through rates.'}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
+                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '16px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff0000" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ marginBottom: '8px' }}><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 2-2 69.44 69.44 0 0 1 15 0 2 2 0 0 1 2 2 24.12 24.12 0 0 1 0 10 2 2 0 0 1-2 2 69.44 69.44 0 0 1-15 0 2 2 0 0 1-2-2Z"/><path d="m10 15 5-3-5-3v6Z"/></svg>
+                              <div style={{ fontSize: '10px', fontWeight: 800 }}>YouTube</div>
                            </div>
+                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '16px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e1306c" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ marginBottom: '8px' }}><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                              <div style={{ fontSize: '10px', fontWeight: 800 }}>Instagram</div>
+                           </div>
+                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '16px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1877f2" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ marginBottom: '8px' }}><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                              <div style={{ fontSize: '10px', fontWeight: 800 }}>Facebook</div>
+                           </div>
+                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '16px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ marginBottom: '8px' }}><path d="M4 4l11.733 16h4.267l-11.733 -16z"/><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"/></svg>
+                              <div style={{ fontSize: '10px', fontWeight: 800 }}>Twitter / X</div>
+                           </div>
+                        </div>
+
+                        <div style={{ marginBottom: '24px' }}>
+                           <label style={metaLabelStyle}>PASTE SOCIAL LINK (X, INSTA, FB, YT)</label>
+                           <div style={{ display: 'flex', gap: '8px' }}>
+                              <input 
+                                 autoFocus 
+                                 value={videoUrlInput} 
+                                 onChange={e => setVideoUrlInput(e.target.value)} 
+                                 onKeyDown={e => e.key === 'Enter' && handleApplyYoutube()}
+                                 placeholder="https://x.com/status/123..." 
+                                 style={{ ...metaInputStyle, background: '#f1f5f9', marginBottom: 0 }} 
+                              />
+                              <button onClick={handleApplyYoutube} style={{ ...publishBtnStyle, padding: '0 16px' }}>Embed</button>
+                           </div>
+                        </div>
+
+                        <div style={{ textAlign: 'center' }}>
+                           <div style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', marginBottom: '16px' }}>OR UPLOAD LOCAL FILE</div>
+                           <button onClick={() => { videoInputRef.current?.click(); setVideoModalOpen(false); }} style={{ ...iconBtnStyle, width: '100%', padding: '16px', borderStyle: 'dashed', borderWidth: '2px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '24px', height: '24px' }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                              <span style={{ fontSize: '14px', fontWeight: 700 }}>Upload MP4/WebM</span>
+                           </button>
+                        </div>
+                     </div>
+                  </motion.div>
+               </div>
+            )}
+         </AnimatePresence>
+
+         <AnimatePresence>
+            {imageModalOpen && (
+               <div style={modalBackdropStyle}>
+                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ ...modalContentStyle, maxWidth: '450px' }}>
+                     <div style={modalHeaderStyle}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '18px', height: '18px', color: '#8b5cf6' }}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                           <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Visual Intelligence</h2>
+                        </div>
+                        <button onClick={() => setImageModalOpen(false)} style={closeModalBtn}>
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '20px', height: '20px' }}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                     </div>
+                     <div style={{ padding: '30px' }}>
+                        <label style={metaLabelStyle}>IMAGE ALT TEXT (SEO)</label>
+                        <input 
+                           autoFocus 
+                           value={imageAltInput} 
+                           onChange={e => setImageAltInput(e.target.value)} 
+                           onKeyDown={e => e.key === 'Enter' && handleApplyImageAlt()}
+                           placeholder="Describe this image for search engines..." 
+                           style={{ ...metaInputStyle, background: '#f5f3ff', marginBottom: '20px' }} 
+                        />
+                        <p style={{ fontSize: '11px', color: '#64748b', marginBottom: '24px', lineHeight: '1.5' }}>
+                           Alt text improves search rankings and accessibility for screen readers. Keep it descriptive and include your focus keyword if natural.
+                        </p>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                           <button onClick={handleApplyImageAlt} style={{ ...publishBtnStyle, background: '#8b5cf6', flex: 1, padding: '10px' }}>Save Metadata</button>
                         </div>
                      </div>
                   </motion.div>
@@ -565,69 +1629,4 @@ const SeoTip = ({ icon, text, type }: any) => (
       <span style={{ fontSize: '12px', fontWeight: 600, color: '#475569' }}>{text}</span>
    </div>
 );
-const InputGroup = ({ label, value, onChange, placeholder }: any) => (
-   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-      <label style={metaLabelStyle}>{label}</label>
-      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={metaInputStyle} />
-   </div>
-);
-const MiniScore = ({ label, value, color = '#2563eb' }: any) => (
-   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <span style={{ fontSize: '9px', fontWeight: 900, color: '#94a3b8' }}>{label}</span>
-      <span style={{ fontSize: '14px', fontWeight: 900, color }}>{value}%</span>
-   </div>
-);
-const TabBtn = ({ active, onClick, icon, label }: any) => (
-   <button onClick={onClick} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '12px 0', background: active ? '#fff' : 'transparent', border: 'none', color: active ? '#2563eb' : '#64748b', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s' }}>
-      {icon} <span style={{ fontSize: '8px', fontWeight: 900, letterSpacing: '0.5px' }}>{label.toUpperCase()}</span>
-   </button>
-);
-const ToolbarBtn = ({ children, onClick, active }: any) => (
-   <button type="button" onClick={onClick} style={{ width: '38px', height: '38px', borderRadius: '10px', border: active ? '2px solid #2563eb' : '1px solid #e2e8f0', background: active ? '#eff6ff' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
-      {children}
-   </button>
-);
-
-// Styles
-const rootContainerStyle: React.CSSProperties = { position: 'fixed', inset: 0, background: '#f8fafc', display: 'flex', flexDirection: 'column', zIndex: 9999 };
-const headerStyle: React.CSSProperties = { height: '80px', background: '#fff', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 40px' };
-const navIconStyle: React.CSSProperties = { background: '#f1f5f9', border: 'none', padding: '10px', borderRadius: '12px', cursor: 'pointer' };
-const headerTitleStyle: React.CSSProperties = { margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a' };
-const versionTagStyle: React.CSSProperties = { fontSize: '11px', fontWeight: 600, color: '#2563eb' };
-const scoreHubStyle: React.CSSProperties = { display: 'flex', gap: '24px', marginRight: '20px' };
-const iconBtnStyle: React.CSSProperties = { background: '#fff', border: '1px solid #e2e8f0', padding: '10px', borderRadius: '12px', cursor: 'pointer', color: '#64748b' };
-const publishBtnStyle: React.CSSProperties = { background: '#2563eb', color: '#fff', border: 'none', padding: '12px 28px', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)' };
-const mainCanvasStyle: React.CSSProperties = { flex: 1, overflowY: 'auto', padding: '50px', display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#f8fafc' };
-const floatingToolbarStyle: React.CSSProperties = { position: 'sticky', top: '0', zIndex: 100, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(12px)', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '16px', display: 'flex', gap: '8px', marginBottom: '40px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' };
-const toolDivider: React.CSSProperties = { width: '1px', height: '24px', background: '#e2e8f0', margin: '0 8px' };
-const titleInputStyle: React.CSSProperties = { width: '100%', fontSize: '48px', fontWeight: 900, border: 'none', outline: 'none', background: 'transparent', marginBottom: '30px', color: '#0f172a', letterSpacing: '-0.025em' };
-const editorWrapperStyle: React.CSSProperties = { background: '#fff', padding: '80px 100px', borderRadius: '24px', minHeight: '1000px', border: '1px solid #e2e8f0', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)', position: 'relative' };
-const intelSidebarStyle: React.CSSProperties = { width: '360px', background: '#fff', borderLeft: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' };
-const intelTabsStyle: React.CSSProperties = { display: 'flex', background: '#f1f5f9', padding: '5px', margin: '24px', borderRadius: '16px', gap: '4px' };
-const sidebarHeadingStyle: React.CSSProperties = { fontSize: '11px', fontWeight: 800, color: '#94a3b8', marginBottom: '16px', marginTop: '30px', textTransform: 'uppercase', letterSpacing: '1px' };
-const hcuCardStyle: React.CSSProperties = { background: '#f8fafc', padding: '20px', borderRadius: '20px', border: '1px solid #e2e8f0', marginBottom: '24px' };
-const tocItemStyle: React.CSSProperties = { fontSize: '13px', color: '#64748b', fontWeight: 500, padding: '4px 12px' };
-const metaLabelStyle: React.CSSProperties = { fontSize: '11px', fontWeight: 700, color: '#94a3b8', marginBottom: '8px', display: 'block' };
-const metaInputStyle: React.CSSProperties = { width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '14px', outline: 'none', background: '#f8fafc' };
-const tipRowStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', marginBottom: '8px', fontWeight: 600 };
-const eeatCheckStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 600, color: '#475569' };
-const metaTextAreaStyle: React.CSSProperties = { width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '14px', minHeight: '100px', outline: 'none', background: '#f8fafc' };
-const faqNodeStyle: React.CSSProperties = { padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' };
-const faqInputSmall: React.CSSProperties = { width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '10px', fontSize: '13px', fontWeight: 600 };
-const faqTextArea: React.CSSProperties = { width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', minHeight: '80px' };
-const addNodeBtn: React.CSSProperties = { width: '100%', padding: '12px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', fontWeight: 800, color: '#2563eb', cursor: 'pointer' };
-const lsiTagStyle: React.CSSProperties = { background: '#eff6ff', color: '#2563eb', padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 700, border: '1px solid #dbeafe' };
-const guardianCard: React.CSSProperties = { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px', background: '#f0f7ff', borderRadius: '24px', border: '1px solid #dbeafe', marginBottom: '20px' };
-const bubbleMenuStyle: React.CSSProperties = { background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '6px', display: 'flex', gap: '6px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' };
-const floatingMenuStyle: React.CSSProperties = { background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '4px', display: 'flex', gap: '4px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' };
-const fMenuBtn: React.CSSProperties = { padding: '6px 10px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '12px', fontWeight: 800, color: '#64748b' };
-const deepWorkOverlayStyle: React.CSSProperties = { position: 'fixed', inset: 0, background: '#fff', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' };
-const exitDeepWorkStyle: React.CSSProperties = { background: '#f1f5f9', border: 'none', padding: '14px 28px', borderRadius: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' };
-const deepWorkTitleStyle: React.CSSProperties = { width: '100%', fontSize: '64px', fontWeight: 900, border: 'none', outline: 'none', background: 'transparent', marginBottom: '60px', textAlign: 'center' };
-const modalBackdropStyle: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.3)', backdropFilter: 'blur(8px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' };
-const modalContentStyle: React.CSSProperties = { background: '#fff', width: '90%', maxWidth: '850px', borderRadius: '32px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' };
-const modalHeaderStyle: React.CSSProperties = { padding: '24px 40px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
-const closeModalBtn: React.CSSProperties = { border: 'none', background: '#f1f5f9', padding: '8px', borderRadius: '10px', cursor: 'pointer' };
-const headerSelectWrapper: React.CSSProperties = { display: 'flex', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0 12px', margin: '0 4px' };
-const headerSelectStyle: React.CSSProperties = { border: 'none', background: 'transparent', fontSize: '12px', fontWeight: 800, color: '#475569', outline: 'none', height: '34px', cursor: 'pointer' };
-const metaSelectStyle: React.CSSProperties = { width: '100%', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '14px', fontWeight: 600, background: '#fff' };
+// --- End of sovereign editor ---

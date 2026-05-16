@@ -1,18 +1,21 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
 <channel>
   <title>ChatWizs Blog</title>
   <link>https://chatwizs.com</link>
-  <description>Expert SEO and Technology Insights</description>
+  <description>Expert SEO and Technology Insights for 2026</description>
   <language>en-us</language>
-  <lastBuildDate>Fri, 15 May 2026 11:11:46 GMT</lastBuildDate>
+  <lastBuildDate>Sat, 16 May 2026 05:30:59 GMT</lastBuildDate>
+  <atom:link href="https://chatwizs.com/feed.xml" rel="self" type="application/rss+xml" />
   
   <item>
     <title>Gold Import Duty Raised from 6% to 15%: Full Impact Explained</title>
     <link>https://chatwizs.com/blog/gold-import-duty</link>
-    <description>On 10th May 2026, Prime Minister Narendra Modi spoke directly to the people of India. In a simple and emotional appeal, he requested everyone to stop buying gol</description>
+    <description><![CDATA[On 10th May 2026, Prime Minister Narendra Modi spoke directly to the people of India. In a simple and emotional appeal, he requested everyone to stop buying gol]]></description>
     <pubDate>Fri, 15 May 2026 00:00:00 GMT</pubDate>
-    <guid>https://chatwizs.com/blog/gold-import-duty</guid>
+    <guid isPermaLink="true">https://chatwizs.com/blog/gold-import-duty</guid>
+    <dc:creator>Admin</dc:creator>
+    <category>General</category>
   </item>
 </channel>
 </rss>
