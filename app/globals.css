@@ -154,10 +154,10 @@ button, .btn {
 }
 
 /* ✅ LCP: Defers rendering of below-fold content
-   EXEMPTING .lcp-section to ensure immediate LCP element discovery */
-section:not(:first-of-type):not(.lcp-section), footer {
+   EXEMPTING first section AND .lcp-section to prevent CLS on hero */
+section:not(:first-of-type):not(.lcp-section):not(.hero-skeleton) {
   content-visibility: auto;
-  contain-intrinsic-size: 0 400px;
+  contain-intrinsic-size: 0 auto 400px;
 }
 
 /* ✅ Custom Scrollbar — minimal, fast */
@@ -329,8 +329,10 @@ section:not(:first-of-type):not(.lcp-section), footer {
 @media (max-width: 768px) {
   html { font-size: 15px; }
   .container { padding: 0 1rem; }
-  h1 { font-size: 2rem !important; }
-  h2 { font-size: 1.5rem !important; }
+  /* ✅ FIX: !important removed — was overriding inline styles on featured post */
+  h1 { font-size: clamp(1.75rem, 5vw, 2.25rem); }
+  h2 { font-size: clamp(1.25rem, 4vw, 1.5rem); }
+  .hero-h1 { font-size: 2.25rem !important; }
 }
 
 @media (max-width: 480px) {

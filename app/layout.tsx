@@ -4,11 +4,14 @@ import { Inter } from "next/font/google";
 import Script from "next/script";
 import Link from 'next/link';
 import Copyright from './Copyright';
+import MobileNav from '@/components/MobileNav';
 
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-inter",
+  preload: true,
+  fallback: ['system-ui', '-apple-system', 'sans-serif'],
 });
 
 export const metadata: Metadata = {
@@ -37,6 +40,7 @@ export const metadata: Metadata = {
     url: 'https://chatwizs.com',
     siteName: 'ChatWizs',
     locale: 'en_US',
+    images: [{ url: 'https://chatwizs.com/og-image.jpg', width: 1200, height: 630, alt: 'ChatWizs — Expert Insights & SEO Optimized Content' }],
   },
   twitter: {
     card: 'summary_large_image',
@@ -146,8 +150,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
+        {/* ✅ Preconnect: Reduces connection latency for external resources */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <style dangerouslySetInnerHTML={{
           __html: `
           :root {
@@ -172,6 +180,9 @@ export default function RootLayout({
           main { min-height: 80vh; }
           .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
           .sr-only:focus { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; }
+          .desktop-nav { display: flex; gap: 1.5rem; list-style: none; align-items: center; margin: 0; padding: 0; }
+          .mobile-nav-btn { display: none; }
+          @media (max-width: 768px) { .desktop-nav { display: none; } .mobile-nav-btn { display: flex; } }
         ` }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }} />
         <link rel="alternate" type="application/rss+xml" title="ChatWizs RSS Feed" href="/feed.xml" />
@@ -211,32 +222,47 @@ export default function RootLayout({
         </a>
         <header className="glass-panel" style={{ position: 'sticky', top: 0, zIndex: 100, margin: 0 }}>
           <nav className="container" aria-label="Main Navigation" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: 'var(--header-height)' }}>
-            <a href="/" style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.025em', color: 'var(--foreground)' }} aria-label="ChatWizs Home">
+            <Link href="/" style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.025em', color: 'var(--foreground)', textDecoration: 'none' }} aria-label="ChatWizs Home">
               Chat<span style={{ color: 'var(--primary)' }}>Wizs</span>
-            </a>
-            <ul style={{ display: 'flex', gap: '1rem', listStyle: 'none', alignItems: 'center', margin: 0, padding: 0 }} role="list">
-              <li><Link href="/" style={{ fontWeight: 700, color: 'var(--foreground)' }}>Home</Link></li>
-              <li><Link href="/blog" style={{ fontWeight: 700, color: 'var(--foreground)' }}>Blog</Link></li>
-              <li><Link href="/about" style={{ fontWeight: 700, color: 'var(--foreground)' }}>About</Link></li>
-              <li><Link href="/admin" style={{ fontSize: '0.8125rem', color: 'white', background: 'var(--primary)', padding: '0.4rem 0.8rem', borderRadius: '6px', fontWeight: 700 }}>Admin</Link></li>
+            </Link>
+            {/* ✅ Admin link REMOVED from public header — security + no user value */}
+            {/* Desktop Nav */}
+            <ul className="desktop-nav" role="list">
+              <li><Link href="/" style={{ fontWeight: 600, color: 'var(--foreground)', textDecoration: 'none' }}>Home</Link></li>
+              <li><Link href="/blog" style={{ fontWeight: 600, color: 'var(--foreground)', textDecoration: 'none' }}>Blog</Link></li>
+              <li><Link href="/stories" style={{ fontWeight: 600, color: 'var(--foreground)', textDecoration: 'none' }}>Stories</Link></li>
+              <li><Link href="/about" style={{ fontWeight: 600, color: 'var(--foreground)', textDecoration: 'none' }}>About</Link></li>
+              <li><Link href="/search" style={{ fontWeight: 600, color: 'var(--foreground)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }} aria-label="Search articles">🔍 Search</Link></li>
+              <li><Link href="/contact" style={{ fontSize: '0.875rem', color: 'white', background: 'var(--primary)', padding: '0.5rem 1.25rem', borderRadius: '6px', fontWeight: 700, textDecoration: 'none' }}>Contact</Link></li>
             </ul>
+            {/* Mobile Nav — hamburger */}
+            <div className="mobile-nav-btn">
+              <MobileNav />
+            </div>
           </nav>
         </header>
         <main id="main-content" className="container">
           {children}
         </main>
-        <footer className="container" style={{ margin: 0, padding: 0, borderTop: '1px solid var(--border)', textAlign: 'center' }}>
-          <nav aria-label="Footer Navigation" style={{ display: 'flex', justifyContent: 'center', gap: '1rem', margin: 0, padding: '1rem 0', fontSize: '0.875rem', color: 'var(--muted-foreground)', fontWeight: 600 }}>
-            <Link href="/about">About Us</Link>
-            <Link href="/privacy">Privacy Policy</Link>
-            <Link href="/editorial-policy" style={{ fontWeight: 700, color: 'var(--primary)' }}>Editorial Guidelines</Link>
-            <Link href="/fact-checking-policy" style={{ fontWeight: 700, color: 'var(--primary)' }}>Fact-Checking Policy</Link>
-            <Link href="/contact">Contact</Link>
-            <Link href="/terms">Terms</Link>
-          </nav>
-          <p style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
-            <Copyright /> Built with Google 2026 Policy Compliance.
-          </p>
+        <footer style={{ borderTop: '1px solid var(--border)', marginTop: '3rem', background: 'var(--muted)' }}>
+          <div className="container" style={{ padding: '2.5rem 1.5rem', textAlign: 'center' }}>
+            <Link href="/" style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--foreground)', textDecoration: 'none', display: 'inline-block', marginBottom: '1.25rem' }}>
+              Chat<span style={{ color: 'var(--primary)' }}>Wizs</span>
+            </Link>
+            <nav aria-label="Footer Navigation" style={{ display: 'flex', justifyContent: 'center', gap: '1.25rem', flexWrap: 'wrap', marginBottom: '1.25rem', fontSize: '0.875rem', fontWeight: 600 }}>
+              <Link href="/about" style={{ color: 'var(--muted-foreground)', textDecoration: 'none' }}>About Us</Link>
+              <Link href="/blog" style={{ color: 'var(--muted-foreground)', textDecoration: 'none' }}>Blog</Link>
+              <Link href="/stories" style={{ color: 'var(--muted-foreground)', textDecoration: 'none' }}>Web Stories</Link>
+              <Link href="/editorial-policy" style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>Editorial Guidelines</Link>
+              <Link href="/fact-checking-policy" style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>Fact-Checking</Link>
+              <Link href="/privacy" style={{ color: 'var(--muted-foreground)', textDecoration: 'none' }}>Privacy</Link>
+              <Link href="/contact" style={{ color: 'var(--muted-foreground)', textDecoration: 'none' }}>Contact</Link>
+              <Link href="/terms" style={{ color: 'var(--muted-foreground)', textDecoration: 'none' }}>Terms</Link>
+            </nav>
+            <p style={{ color: 'var(--muted-foreground)', fontSize: '0.8125rem' }}>
+              <Copyright /> Expert-verified content built for Google&apos;s EEAT standards.
+            </p>
+          </div>
         </footer>
       </body>
     </html>

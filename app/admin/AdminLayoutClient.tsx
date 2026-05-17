@@ -2,9 +2,26 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 export default function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [isMobile, setIsMobile] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // ✅ Handle responsive window sizing
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setIsSidebarOpen(false); // Close mobile menu when scaling up to desktop
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const menuItems = [
     { label: 'Dashboard', href: '/admin', icon: '🏠' },
@@ -29,16 +46,57 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
       color: '#0f172a', 
       fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
-      {/* Modern SaaS Sidebar */}
-      <aside style={{ width: '260px', background: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, bottom: 0, zIndex: 200 }}>
-        <div style={{ height: '72px', padding: '0 24px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid #f1f5f9' }}>
-          <div style={{ background: 'linear-gradient(135deg, #2563eb, #4f46e5)', color: '#fff', width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '16px' }}>
-            C
+      {/* ✅ Mobile Overlay / Backdrop */}
+      {isMobile && isSidebarOpen && (
+        <div 
+          onClick={() => setIsSidebarOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.4)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 190,
+            animation: 'fadeIn 0.2s ease'
+          }}
+        />
+      )}
+
+      {/* ✅ Modern Responsive SaaS Sidebar */}
+      <aside style={{ 
+        width: '260px', 
+        background: '#ffffff', 
+        borderRight: '1px solid #e2e8f0', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        position: 'fixed', 
+        top: 0, 
+        bottom: 0, 
+        left: 0,
+        zIndex: 200,
+        transform: isMobile 
+          ? (isSidebarOpen ? 'translateX(0)' : 'translateX(-260px)') 
+          : 'translateX(0)',
+        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+      }}>
+        <div style={{ height: '72px', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ background: 'linear-gradient(135deg, #2563eb, #4f46e5)', color: '#fff', width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '16px' }}>
+              C
+            </div>
+            <span style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '-0.5px' }}>ChatWizs Admin</span>
           </div>
-          <span style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '-0.5px' }}>ChatWizs Admin</span>
+          {isMobile && (
+            <button 
+              onClick={() => setIsSidebarOpen(false)}
+              aria-label="Close sidebar"
+              style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}
+            >
+              ✕
+            </button>
+          )}
         </div>
         
-        <nav style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+        <nav style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, overflowY: 'auto' }}>
           <div style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '8px', paddingLeft: '8px' }}>Content</div>
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
@@ -46,6 +104,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
               <Link 
                 key={item.label} 
                 href={item.href}
+                onClick={() => isMobile && setIsSidebarOpen(false)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -78,25 +137,74 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <div style={{ flex: 1, marginLeft: '260px', display: 'flex', flexDirection: 'column', height: '100vh', overflowY: 'auto' }}>
+      {/* ✅ Responsive Main Content Area */}
+      <div style={{ 
+        flex: 1, 
+        marginLeft: isMobile ? 0 : '260px', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        height: '100vh', 
+        overflowY: 'auto',
+        transition: 'margin-left 0.3s ease'
+      }}>
         {/* Modern Header */}
-        <header style={{ height: '72px', minHeight: '72px', background: '#ffffff', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', position: 'sticky', top: 0, zIndex: 100 }}>
-          <div style={{ fontSize: '15px', fontWeight: 500, color: '#64748b' }}>
-            {(pathname || '').includes('/new') ? 'Create' : (pathname || '').includes('/stories') ? 'Web Stories' : 'Dashboard'}
+        <header style={{ 
+          height: '72px', 
+          minHeight: '72px', 
+          background: '#ffffff', 
+          borderBottom: '1px solid #e2e8f0', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          padding: isMobile ? '0 16px' : '0 32px', 
+          position: 'sticky', 
+          top: 0, 
+          zIndex: 100 
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {/* ✅ Hamburger Toggle Menu on Mobile */}
+            {isMobile && (
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                aria-label="Open sidebar menu"
+                style={{
+                  background: 'none',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '6px',
+                  width: '40px',
+                  height: '40px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '20px',
+                  cursor: 'pointer',
+                  color: '#334155'
+                }}
+              >
+                ☰
+              </button>
+            )}
+            <div style={{ fontSize: '15px', fontWeight: 700, color: '#475569' }}>
+              {(pathname || '').includes('/new') ? 'Create' : (pathname || '').includes('/stories') ? 'Web Stories' : 'Dashboard'}
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <a href="/" target="_blank" style={{ fontSize: '13px', fontWeight: 600, color: '#475569', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              ↗ View Live Site
-            </a>
-            <div style={{ width: '1px', height: '24px', background: '#e2e8f0' }}></div>
-            <Link href="/admin/new" style={{ background: '#2563eb', color: '#fff', padding: '8px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 600, textDecoration: 'none', boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)' }}>
+          <div style={{ display: 'flex', gap: isMobile ? '8px' : '16px', alignItems: 'center' }}>
+            {!isMobile && (
+              <>
+                <a href="/" target="_blank" style={{ fontSize: '13px', fontWeight: 600, color: '#475569', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  ↗ View Live Site
+                </a>
+                <div style={{ width: '1px', height: '24px', background: '#e2e8f0' }}></div>
+              </>
+            )}
+            <Link href="/admin/new" style={{ background: '#2563eb', color: '#fff', padding: isMobile ? '6px 12px' : '8px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)' }}>
               + New Post
             </Link>
           </div>
         </header>
 
-        <main style={{ padding: '0', width: '100%' }}>
+        {/* ✅ Dashboard Content Container with Proper Spacing/Padding */}
+        <main style={{ padding: isMobile ? '1.5rem 1rem' : '2.5rem 2rem', width: '100%', maxWidth: '1200px', margin: '0 auto', flex: 1 }}>
           {children}
         </main>
       </div>

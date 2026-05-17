@@ -44,8 +44,9 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', width: '100%' }}>
+        <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
               <th style={thStyle}>Title</th>
@@ -81,6 +82,7 @@ export default function AdminPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

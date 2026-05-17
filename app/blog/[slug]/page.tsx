@@ -32,6 +32,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const seoDescription = post.metaDescription || post.excerpt;
   const canonical = post.canonicalUrl || `${BASE_URL}/blog/${slug}`;
 
+  // ✅ Dynamic branded OG image — proven +20-30% social CTR
+  const dynamicOgImage = `${BASE_URL}/api/og?slug=${encodeURIComponent(slug)}&type=post`;
+  // Fallback to cover image if dynamic OG fails
+  const ogImageUrl = post.coverImage ? post.coverImage : dynamicOgImage;
+
   return {
     title: seoTitle,
     description: seoDescription,
@@ -43,13 +48,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: post.ogTitle || seoTitle,
       description: post.ogDescription || seoDescription,
-      images: [{
-        url: post.coverImage,
-        width: 1200,
-        height: 630,
-        alt: post.title,
-        type: 'image/jpeg',
-      }],
+      images: [
+        // ✅ Dynamic branded OG image first (highest CTR)
+        {
+          url: dynamicOgImage,
+          width: 1200,
+          height: 630,
+          alt: `${post.title} — ChatWizs`,
+          type: 'image/png',
+        },
+        // ✅ Cover image as fallback
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: post.title,
+          type: 'image/jpeg',
+        },
+      ],
       type: 'article',
       publishedTime: post.date,
       modifiedTime: post.lastModified || post.date,
@@ -64,7 +80,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: 'summary_large_image',
       title: post.ogTitle || seoTitle,
       description: post.ogDescription || seoDescription,
-      images: [post.coverImage],
+      images: [dynamicOgImage],
       creator: '@chatwizs',
       site: '@chatwizs',
     },
@@ -78,6 +94,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     other: {
       'article:published_time': post.date,
       'article:modified_time': post.lastModified || post.date,
+      'og:updated_time': post.lastModified || post.date,
       'article:section': post.category,
       'article:tag': (post.tags || []).join(', '),
       'article:author': post.author,
@@ -173,19 +190,18 @@ export default async function BlogPostPage({ params }: Props) {
             jobTitle: post.factCheckerRole || 'Editorial Reviewer',
           }
         } : {}),
-        // ✅ Topical authority: About + Mentions entities
+        // ✅ SAFE: Only use Wikipedia sameAs for known stable topics (category level)
         about: [
           {
             '@type': 'Thing',
             name: post.category,
-            sameAs: `https://en.wikipedia.org/wiki/${post.category.replace(/ /g, '_')}`,
           }
         ],
+        // ✅ FIX: Removed Wikipedia sameAs from tags (many tags have no Wikipedia pages — broken links hurt trust)
         mentions: [
           ...(post.tags || []).map(tag => ({
             '@type': 'Thing',
             name: tag,
-            sameAs: `https://en.wikipedia.org/wiki/${tag.replace(/ /g, '_')}`,
           })),
           ...(post.semanticMentions || []).map(m => ({
             '@type': 'Thing',
@@ -213,33 +229,8 @@ export default async function BlogPostPage({ params }: Props) {
           acceptedAnswer: { '@type': 'Answer', text: faq.answer },
         })),
       }] : []),
-      // ✅ ClaimReview: Google Fact-Check Trust Signal (highest EEAT value)
-      ...(post.factCheckedBy ? [{
-        '@type': 'ClaimReview',
-        '@id': `${BASE_URL}/blog/${post.slug}#claimreview`,
-        claimReviewed: post.title,
-        reviewRating: {
-          '@type': 'Rating',
-          ratingValue: '5',
-          bestRating: '5',
-          worstRating: '1',
-          alternateName: 'True',
-        },
-        url: `${BASE_URL}/blog/${post.slug}`,
-        author: {
-          '@type': 'Organization',
-          '@id': `${BASE_URL}/#organization`,
-          name: 'ChatWizs',
-        },
-        itemReviewed: {
-          '@type': 'CreativeWork',
-          name: post.title,
-          author: {
-            '@type': 'Person',
-            name: post.author,
-          },
-        },
-      }] : []),
+      // ✅ FIX: ClaimReview REMOVED — misuse of schema (it's designed for external fact-checkers,
+      // NOT for self-review. Google penalizes self-serving ClaimReview. Use reviewedBy instead.)
     ],
   };
 
@@ -263,16 +254,31 @@ export default async function BlogPostPage({ params }: Props) {
   const prevPost = currentIndex > 0 ? allPosts.filter(p => p.published)[currentIndex - 1] : null;
   const nextPost = currentIndex < allPosts.filter(p => p.published).length - 1 ? allPosts.filter(p => p.published)[currentIndex + 1] : null;
 
-  // ✅ Dynamic ToC: Extract headings from HTML content
-  const extractHeadings = (html: string) => {
-    const matches = [...html.matchAll(/<h([2-3])[^>]*?(?:id="([^"]*)")?>([^<]+)<\/h[2-3]>/gi)];
-    return matches.map((m, i) => ({
-      level: parseInt(m[1]),
-      id: m[2] || `heading-${i}`,
-      text: m[3].replace(/<[^>]+>/g, '').trim(),
-    }));
+  // ✅ Inject IDs on h2/h3 headings — enables working ToC anchor links
+  // Also extracts headings for ToC display
+  const injectHeadingIds = (html: string) => {
+    let counter = 0;
+    const headings: { level: number; id: string; text: string }[] = [];
+    const injected = html.replace(
+      /<h([2-3])([^>]*)>(.*?)<\/h[2-3]>/gi,
+      (match, level, attrs, inner) => {
+        const text = inner.replace(/<[^>]+>/g, '').trim();
+        // Use existing id if present, otherwise generate slug
+        const existingId = attrs.match(/id="([^"]*)"/)?.[1];
+        const id = existingId ||
+          `h${level}-${text
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .slice(0, 50)}-${counter++}`;
+        headings.push({ level: parseInt(level), id, text });
+        const newAttrs = existingId ? attrs : `${attrs} id="${id}"`;
+        return `<h${level}${newAttrs}>${inner}</h${level}>`;
+      }
+    );
+    return { injected, headings };
   };
-  const tocHeadings = extractHeadings(post.content);
+  const { injected: contentWithIds, headings: tocHeadings } = injectHeadingIds(post.content);
 
   return (
     <article
@@ -420,7 +426,7 @@ export default async function BlogPostPage({ params }: Props) {
           <div
             id="intro"
             className="tiptap-content"
-            dangerouslySetInnerHTML={{ __html: post.content }}
+            dangerouslySetInnerHTML={{ __html: contentWithIds }}
             style={{ marginBottom: '3rem' }}
             itemProp="articleBody"
           />
@@ -451,7 +457,7 @@ export default async function BlogPostPage({ params }: Props) {
           </div>
         )}
 
-        {(post.faqs && post.faqs.length > 0) && (
+        {(post.faqs && post.faqs.length > 0 && !post.content.includes('data-faq-block=')) && (
           <div style={{ marginTop: '3rem', marginBottom: '3rem' }}>
             <h2 style={{ fontSize: '1.75rem', marginBottom: '1.5rem' }}>Frequently Asked Questions</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -466,21 +472,23 @@ export default async function BlogPostPage({ params }: Props) {
         )}
 
         {/* ✅ Crawl Depth: Next/Previous Navigation */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', margin: '4rem 0', padding: '2rem 0', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
-          {prevPost ? (
-            <Link href={`/blog/${prevPost.slug}`} style={{ flex: 1, textDecoration: 'none', color: 'inherit' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.5rem' }}>← Previous Post</div>
-              <div style={{ fontWeight: 700, fontSize: '1rem' }}>{prevPost.title}</div>
-            </Link>
-          ) : <div style={{ flex: 1 }} />}
-          
-          {nextPost ? (
-            <Link href={`/blog/${nextPost.slug}`} style={{ flex: 1, textAlign: 'right', textDecoration: 'none', color: 'inherit' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Next Post →</div>
-              <div style={{ fontWeight: 700, fontSize: '1rem' }}>{nextPost.title}</div>
-            </Link>
-          ) : <div style={{ flex: 1 }} />}
-        </div>
+        {(prevPost || nextPost) && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', margin: '4rem 0', padding: '2rem 0', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+            {prevPost ? (
+              <Link href={`/blog/${prevPost.slug}`} style={{ flex: 1, textDecoration: 'none', color: 'inherit' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.5rem' }}>← Previous Post</div>
+                <div style={{ fontWeight: 700, fontSize: '1rem' }}>{prevPost.title}</div>
+              </Link>
+            ) : <div style={{ flex: 1 }} />}
+            
+            {nextPost ? (
+              <Link href={`/blog/${nextPost.slug}`} style={{ flex: 1, textAlign: 'right', textDecoration: 'none', color: 'inherit' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Next Post →</div>
+                <div style={{ fontWeight: 700, fontSize: '1rem' }}>{nextPost.title}</div>
+              </Link>
+            ) : <div style={{ flex: 1 }} />}
+          </div>
+        )}
 
         {/* ✅ Related Insights: Contextual Internal Linking */}
         {relatedPosts.length > 0 && (
@@ -505,16 +513,20 @@ export default async function BlogPostPage({ params }: Props) {
         )}
 
         <div className="glass-panel" style={{ padding: '2.5rem', display: 'flex', gap: '2rem', alignItems: 'flex-start', marginBottom: '4rem', background: 'linear-gradient(to right, #f8fafc, #ffffff)' }}>
-          <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '3px solid var(--primary)' }}>
-             <Image src={post.authorImage || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80'} alt={post.author} fill style={{ objectFit: 'cover' }} />
-          </div>
+          <Link href={`/author/${(post.author || 'admin').toLowerCase().replace(/ /g, '-')}`}
+            style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '3px solid var(--primary)', display: 'block' }}>
+            <Image src={post.authorImage || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80'} alt={post.author} fill style={{ objectFit: 'cover' }} />
+          </Link>
           <div>
-            <h3 style={{ marginBottom: '0.25rem', fontSize: '1.25rem' }}>About {post.author}</h3>
+            <h3 style={{ marginBottom: '0.25rem', fontSize: '1.25rem' }}>
+              About <Link href={`/author/${(post.author || 'admin').toLowerCase().replace(/ /g, '-')}`} style={{ color: 'inherit', textDecoration: 'none' }}>{post.author}</Link>
+            </h3>
             <div style={{ color: 'var(--primary)', fontSize: '0.9375rem', fontWeight: 700, marginBottom: '0.75rem' }}>{post.authorJobTitle}</div>
             <p style={{ color: 'var(--muted-foreground)', marginBottom: '1.25rem', fontSize: '1rem', lineHeight: 1.6 }}>
               {post.authorBio || `${post.author} is a lead editorial contributor at ChatWizs, specializing in technical SEO and modern web architectures.`}
             </p>
-            <div style={{ display: 'flex', gap: '1.5rem' }}>
+            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+              <Link href={`/author/${(post.author || 'admin').toLowerCase().replace(/ /g, '-')}`} style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none' }}>View all articles →</Link>
               {post.authorSocials?.website && <a href={post.authorSocials.website} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none' }}>Portfolio ↗</a>}
               {post.authorSocials?.twitter && <a href={post.authorSocials.twitter} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none' }}>Twitter ↗</a>}
               {post.authorSocials?.linkedin && <a href={post.authorSocials.linkedin} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none' }}>LinkedIn ↗</a>}

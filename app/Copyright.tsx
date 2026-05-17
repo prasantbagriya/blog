@@ -12,7 +12,7 @@ export default function Copyright() {
 
   return (
     <span>
-      &copy; {year} ChatWizs.
+      &copy; {year} ChatWizs Blogs.
     </span>
   );
 }

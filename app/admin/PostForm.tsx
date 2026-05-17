@@ -91,6 +91,7 @@ const ImageSlider = Node.create({
   name: 'imageSlider',
   group: 'block',
   atom: true,
+  selectable: true,
   draggable: true,
   addAttributes() {
     return {
@@ -99,6 +100,9 @@ const ImageSlider = Node.create({
         parseHTML: element => {
           const imgs = Array.from(element.querySelectorAll('img'));
           return imgs.map(img => ({ src: img.src, alt: img.alt }));
+        },
+        renderHTML: () => {
+          return {};
         }
       },
       autoScroll: { default: true },
@@ -109,13 +113,14 @@ const ImageSlider = Node.create({
   parseHTML() {
     return [{ tag: 'div[data-image-slider]' }]
   },
-  renderHTML({ HTMLAttributes }) {
-    const images = HTMLAttributes.images || [];
+  renderHTML({ node, HTMLAttributes }) {
+    const images = node.attrs.images || [];
     return ['div', mergeAttributes(HTMLAttributes, { 
       'data-image-slider': 'true',
       'data-auto-scroll': HTMLAttributes.autoScroll,
       'data-center-zoom': HTMLAttributes.centerZoom,
       'data-speed': HTMLAttributes.speed,
+      contenteditable: 'false',
       style: 'display: flex; overflow-x: auto; gap: 16px; padding: 16px 0; margin: 24px 0; scroll-snap-type: x mandatory; scroll-behavior: smooth; background: #f8fafc; border-radius: 16px; align-items: center;'
     }), 
       ...images.map((img: any) => ['img', { src: img.src, alt: img.alt, style: 'height: 300px; border-radius: 12px; scroll-snap-align: center; object-fit: cover; flex-shrink: 0;' }])
@@ -156,6 +161,7 @@ const FaqBlock = Node.create({
   name: 'faqBlock',
   group: 'block',
   atom: true,
+  selectable: true,
   draggable: true,
   addAttributes() {
     return {
@@ -167,6 +173,9 @@ const FaqBlock = Node.create({
           } catch {
             return [];
           }
+        },
+        renderHTML: () => {
+          return {};
         }
       }
     }
@@ -174,11 +183,12 @@ const FaqBlock = Node.create({
   parseHTML() {
     return [{ tag: 'div[data-faq-block]' }]
   },
-  renderHTML({ HTMLAttributes }) {
-    const items = HTMLAttributes.items || [];
+  renderHTML({ node, HTMLAttributes }) {
+    const items = node.attrs.items || [];
     return ['div', mergeAttributes(HTMLAttributes, { 
       'data-faq-block': 'true', 
       'data-faqs': JSON.stringify(items),
+      contenteditable: 'false',
       style: 'margin: 32px 0; border: 1px solid #e2e8f0; border-radius: 20px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);'
     }),
       ['div', { style: 'padding: 16px 24px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 10px;' },
@@ -189,9 +199,9 @@ const FaqBlock = Node.create({
         ],
         ['span', { style: 'font-size: 13px; font-weight: 800; color: #1e293b; letter-spacing: 0.5px;' }, 'FREQUENTLY ASKED QUESTIONS']
       ],
-      ...items.map((item: any) => ['div', { style: 'border-bottom: 1px solid #f1f5f9; padding: 16px 24px;' },
-        ['div', { style: 'font-weight: 700; color: #1e293b; margin-bottom: 8px; font-size: 15px;' }, `Q: ${item.question}`],
-        ['div', { style: 'color: #475569; font-size: 14px; line-height: 1.6;' }, item.answer]
+      ...items.map((item: any) => ['div', { style: 'border-bottom: 1px solid #f1f5f9; padding: 15px 24px;' },
+        ['div', { style: 'font-weight: 700; color: #1e293b; margin-bottom: 8px; font-size: 18px; line-height: 1.4;' }, `Q: ${item.question}`],
+        ['div', { style: 'color: #1e293b; font-size: 18.5px; line-height: 1.7;' }, item.answer]
       ])
     ];
   }
@@ -411,6 +421,25 @@ export default function PostForm({ post }: PostFormProps) {
       setFaqModalOpen(false);
    };
 
+   const handleSidebarFaqChange = (updatedFaqs: { question: string; answer: string }[]) => {
+      setFaqs(updatedFaqs);
+      if (!editor) return;
+      editor.commands.command(({ tr, state }) => {
+         let updated = false;
+         state.doc.descendants((node, pos) => {
+            if (node.type.name === 'faqBlock') {
+               tr.setNodeMarkup(pos, undefined, {
+                  ...node.attrs,
+                  items: updatedFaqs
+               });
+               updated = true;
+            }
+            return !updated;
+         });
+         return updated;
+      });
+   };
+
    const handleOpenSliderModal = () => {
       if (!editor) return;
       if (editor.isActive('imageSlider')) {
@@ -609,6 +638,37 @@ export default function PostForm({ post }: PostFormProps) {
       },
    });
 
+   useEffect(() => {
+      if (editor && post && post.faqs && post.faqs.length > 0) {
+         let hasFaqBlock = false;
+         let emptyFaqBlockPos = -1;
+         editor.state.doc.descendants((node, pos) => {
+            if (node.type.name === 'faqBlock') {
+               hasFaqBlock = true;
+               const items = node.attrs.items || [];
+               if (items.length === 0) {
+                  emptyFaqBlockPos = pos;
+               }
+            }
+         });
+         
+         if (emptyFaqBlockPos !== -1) {
+            editor.commands.command(({ tr }) => {
+               tr.setNodeMarkup(emptyFaqBlockPos, undefined, {
+                  items: post.faqs
+               });
+               return true;
+            });
+         } else if (!hasFaqBlock) {
+            editor.commands.command(({ tr, state }) => {
+               const node = state.schema.nodes.faqBlock.create({ items: post.faqs });
+               tr.insert(state.doc.content.size, node);
+               return true;
+            });
+         }
+      }
+   }, [editor, post]);
+
    const syncFaqsFromEditor = (html: string) => {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
@@ -620,9 +680,7 @@ export default function PostForm({ post }: PostFormProps) {
             allFaqs = [...allFaqs, ...items];
          } catch (e) {}
       });
-      if (allFaqs.length > 0) {
-         setFaqs(allFaqs);
-      }
+      setFaqs(allFaqs);
    };
 
    const calculateHelpfulScore = (text: string, html: string) => {
@@ -1039,24 +1097,39 @@ export default function PostForm({ post }: PostFormProps) {
                 </div>
 
                <div style={editorWrapperStyle}>
-                  <BubbleMenu editor={editor} shouldShow={({ editor }) => editor.isActive('image') || editor.isActive('imageSlider') || editor.isActive('faqBlock')}>
+                   <BubbleMenu editor={editor} shouldShow={({ editor, state }) => {
+                      // Check NodeSelection for atom nodes (contenteditable:false)
+                      const { selection } = state;
+                      const isNodeSel = selection && (selection as any).node;
+                      if (isNodeSel) {
+                         const nodeType = (selection as any).node.type.name;
+                         return nodeType === 'faqBlock' || nodeType === 'imageSlider' || nodeType === 'image';
+                      }
+                      return editor.isActive('image') || editor.isActive('imageSlider') || editor.isActive('faqBlock');
+                   }}>
                          <div style={bubbleMenuStyle}>
-                            {editor.isActive('imageSlider') ? (
-                               <SovereignToolBtn onClick={handleOpenSliderModal} title="Slider Settings">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
-                                  <span style={{ fontSize: '11px', fontWeight: 700, marginLeft: '6px' }}>EDIT SLIDER</span>
-                               </SovereignToolBtn>
-                            ) : editor.isActive('faqBlock') ? (
-                               <SovereignToolBtn onClick={handleOpenFaqModal} title="FAQ Settings">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-                                  <span style={{ fontSize: '11px', fontWeight: 700, marginLeft: '6px' }}>EDIT FAQ</span>
-                               </SovereignToolBtn>
-                            ) : (
-                               <SovereignToolBtn onClick={handleOpenImageModal} title="Image Settings">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-                                  <span style={{ fontSize: '11px', fontWeight: 700, marginLeft: '6px' }}>ALT TEXT</span>
-                               </SovereignToolBtn>
-                            )}
+                            {(() => {
+                               const { selection } = editor.state;
+                               const selectedNodeType = (selection as any).node?.type?.name;
+                               if (selectedNodeType === 'imageSlider' || editor.isActive('imageSlider')) return (
+                                  <SovereignToolBtn onClick={handleOpenSliderModal} title="Slider Settings">
+                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+                                     <span style={{ fontSize: '11px', fontWeight: 700, marginLeft: '6px' }}>EDIT SLIDER</span>
+                                  </SovereignToolBtn>
+                               );
+                               if (selectedNodeType === 'faqBlock' || editor.isActive('faqBlock')) return (
+                                  <SovereignToolBtn onClick={handleOpenFaqModal} title="Edit FAQ Block">
+                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                                     <span style={{ fontSize: '11px', fontWeight: 700, marginLeft: '6px' }}>EDIT FAQ</span>
+                                  </SovereignToolBtn>
+                               );
+                               return (
+                                  <SovereignToolBtn onClick={handleOpenImageModal} title="Image Settings">
+                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                                     <span style={{ fontSize: '11px', fontWeight: 700, marginLeft: '6px' }}>ALT TEXT</span>
+                                  </SovereignToolBtn>
+                               );
+                            })()}
                          </div>
                      </BubbleMenu>
                      <EditorContent editor={editor} />
@@ -1164,11 +1237,11 @@ export default function PostForm({ post }: PostFormProps) {
                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                               {faqs.map((faq, i) => (
                                  <div key={i} style={faqNodeStyle}>
-                                    <input placeholder="Question" value={faq.question} onChange={e => { const n = [...faqs]; n[i].question = e.target.value; setFaqs(n); }} style={faqInputSmall} />
-                                    <textarea placeholder="Answer" value={faq.answer} onChange={e => { const n = [...faqs]; n[i].answer = e.target.value; setFaqs(n); }} style={faqTextArea} />
+                                    <input placeholder="Question" value={faq.question} onChange={e => { const n = [...faqs]; n[i].question = e.target.value; handleSidebarFaqChange(n); }} style={faqInputSmall} />
+                                    <textarea placeholder="Answer" value={faq.answer} onChange={e => { const n = [...faqs]; n[i].answer = e.target.value; handleSidebarFaqChange(n); }} style={faqTextArea} />
                                  </div>
                               ))}
-                              <button onClick={() => setFaqs([...faqs, { question: '', answer: '' }])} style={addNodeBtn}>+ Add FAQ Node</button>
+                              <button onClick={() => handleSidebarFaqChange([...faqs, { question: '', answer: '' }])} style={addNodeBtn}>+ Add FAQ Node</button>
                            </div>
                         </motion.div>
                      )}
@@ -1216,6 +1289,13 @@ export default function PostForm({ post }: PostFormProps) {
                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide" style={{ width: '14px', height: '14px' }}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Launch SERP Simulator
                               </button>
                               <InputGroup label="SEO TITLE" value={seoTitle} onChange={setSeoTitle} placeholder="Target Keyword in Title" />
+                              <div style={{ height: '15px' }} />
+                              <InputGroup 
+                                 label="CUSTOM URL SLUG" 
+                                 value={slug} 
+                                 onChange={(val: string) => setSlug(val.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/[\s_-]+/g, '-'))} 
+                                 placeholder="e.g. custom-post-url (leave empty for auto)" 
+                              />
                               <div style={{ height: '15px' }} />
                               <label style={metaLabelStyle}>META DESCRIPTION</label>
                               <textarea value={metaDescription} onChange={e => setMetaDescription(e.target.value)} style={metaTextAreaStyle} placeholder="150-160 characters for optimal CTR" />

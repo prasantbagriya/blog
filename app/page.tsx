@@ -15,7 +15,8 @@ export const metadata: Metadata = {
     description: 'Expert insights on SEO and Web Performance.',
     url: BASE_URL,
     siteName: 'ChatWizs',
-    images: [{ url: 'https://chatwizs.com/og-image.jpg', width: 1200, height: 630 }],
+    // ✅ Real OG image — 1200×630 for proper social share cards
+    images: [{ url: `${BASE_URL}/og-image.jpg`, width: 1200, height: 630, alt: 'ChatWizs — Expert Insights & SEO Optimized Content' }],
     locale: 'en_US',
     type: 'website',
   },
@@ -41,24 +42,8 @@ export default async function Home() {
   const stories = await getStories();
   const publishedStories = stories.filter(s => s && s.published).slice(0, 4);
 
-  const orgJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Organization',
-    '@id': `${BASE_URL}/#organization`,
-    name: 'ChatWizs',
-    url: BASE_URL,
-    logo: {
-      '@type': 'ImageObject',
-      url: `${BASE_URL}/logo-96x96.png`,
-      width: 96,
-      height: 96
-    },
-    sameAs: ['https://twitter.com/chatwizs']
-  };
-
   return (
     <div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }} />
 
       {/* ✅ Hero Section: LCP Optimized */}
       <section className="hero-skeleton animate-fade-in" style={{ 
@@ -193,9 +178,6 @@ export default async function Home() {
         </div>
       </section>
       
-      <footer className="container" style={{ padding: '4rem 0', textAlign: 'center' }}>
-        <Copyright />
-      </footer>
     </div>
   );
 }
