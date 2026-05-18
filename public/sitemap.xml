@@ -32,39 +32,39 @@
   <url><loc>https://chatwizs.com/terms</loc><lastmod>2026-05-18</lastmod><changefreq>yearly</changefreq><priority>0.4</priority></url>
   
   <url>
-    <loc>https://chatwizs.com/blog/test-post-1</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="en-IN" href="https://chatwizs.com/blog/test-post-1" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://chatwizs.com/blog/test-post-1" />
-    <image:image>
-      <image:loc>https://chatwizs.com</image:loc>
-      <image:title>Test Post 1</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://chatwizs.com/blog/test-post-1</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="en-IN" href="https://chatwizs.com/blog/test-post-1" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://chatwizs.com/blog/test-post-1" />
-    <image:image>
-      <image:loc>https://chatwizs.com</image:loc>
-      <image:title>Test Post 1</image:title>
-    </image:image>
-  </url>
-  <url>
     <loc>https://chatwizs.com/blog/gold-import-duty</loc>
-    <lastmod>2026-05-17</lastmod>
+    <lastmod>2026-05-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="en-IN" href="https://chatwizs.com/blog/gold-import-duty" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://chatwizs.com/blog/gold-import-duty" />
     <image:image>
-      <image:loc>https://chatwizs.com/uploads/media-1779021145557-979760319.jpeg</image:loc>
+      <image:loc>https://chatwizs.com/uploads/media-1779097999713-799523522.png</image:loc>
       <image:title>Gold Import Duty Raised from 6% to 15%: Full Impact Explained</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://chatwizs.com/blog/2026-koda-kodiaq-launched</loc>
+    <lastmod>2026-05-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en-IN" href="https://chatwizs.com/blog/2026-koda-kodiaq-launched" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://chatwizs.com/blog/2026-koda-kodiaq-launched" />
+    <image:image>
+      <image:loc>https://chatwizs.com/uploads/media-1779093587288-655226478.png</image:loc>
+      <image:title>2026 Škoda Kodiaq Launched: New Design, Features &amp; Expected Price Explained</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://chatwizs.com/blog/skoda-elroq-2026-price-india-launch-date</loc>
+    <lastmod>2026-05-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en-IN" href="https://chatwizs.com/blog/skoda-elroq-2026-price-india-launch-date" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://chatwizs.com/blog/skoda-elroq-2026-price-india-launch-date" />
+    <image:image>
+      <image:loc>https://chatwizs.com/uploads/media-1779097340131-123277817.jpg</image:loc>
+      <image:title>New Skoda Elroq Promises 570+ km Driving Range and Premium Cabin Tech</image:title>
     </image:image>
   </url>
   

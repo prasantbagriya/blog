@@ -5,6 +5,7 @@ import Script from "next/script";
 import Link from 'next/link';
 import Copyright from './Copyright';
 import MobileNav from '@/components/MobileNav';
+import SliderInitializer from '@/components/SliderInitializer';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -236,7 +237,7 @@ export default function RootLayout({
           
           body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--background); color: var(--foreground); -webkit-font-smoothing: antialiased; text-rendering: optimizeSpeed; }
           .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 1.25rem; }
-          header { position: sticky; top: 0; z-index: 100; height: var(--header-height); background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+          body > header { position: sticky; top: 0; z-index: 100; height: var(--header-height); background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
           .hero-skeleton { text-align: center; padding: 3rem 0; min-height: 200px; contain: layout paint; }
           @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
           .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
@@ -280,6 +281,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={inter.className} suppressHydrationWarning>
+        <SliderInitializer />
         <a href="#main-content" className="sr-only" style={{ top: '1rem', left: '1rem', zIndex: 9999, background: 'var(--primary)', color: 'white', padding: '0.5rem 1rem', borderRadius: 'var(--radius)', textDecoration: 'none' }}>
           Skip to content
         </a>

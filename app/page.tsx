@@ -48,11 +48,11 @@ export default async function Home() {
       {/* ✅ Hero Section: LCP Optimized */}
       <section className="hero-skeleton animate-fade-in" style={{ 
         textAlign: 'center', 
-        padding: '6rem 0',
+        padding: '2.5rem 1rem 1.5rem 1rem', 
         background: 'radial-gradient(circle at center, rgba(37, 99, 235, 0.05) 0%, transparent 70%)',
-        marginBottom: '2rem'
+        marginBottom: '1.5rem'
       }}>
-        <h1 className="hero-h1" style={{ fontSize: '4rem', letterSpacing: '-0.04em' }}>
+        <h1 className="hero-h1" style={{ fontSize: 'clamp(2.25rem, 8vw, 4rem)', letterSpacing: '-0.04em', lineHeight: 1.05 }}>
           Insights for the <br />
           <span style={{ 
             color: 'var(--primary)', 
@@ -68,14 +68,23 @@ export default async function Home() {
       </section>
 
       {featuredPost && (
-        <section className="lcp-section" style={{ marginBottom: '5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0 }}>Featured Insight</h2>
+        <>
+          <link 
+            rel="preload" 
+            as="image" 
+            href={featuredPost.coverImage} 
+            fetchPriority="high" 
+            imageSizes="(max-width: 768px) 100vw, 50vw"
+            imageSrcSet={`${featuredPost.coverImage}?w=640 640w, ${featuredPost.coverImage}?w=1200 1200w`}
+          />
+          <section className="lcp-section" style={{ marginBottom: '5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
+              <h2 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0 }}>Featured Insight</h2>
             <Link href="/blog" aria-label="View all featured blog posts" style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.9375rem', padding: '0.5rem 0' }}>View All Posts →</Link>
           </div>
           <article className="glass-panel card-hover" style={{ 
             display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', 
             overflow: 'hidden', 
             minHeight: '480px',
             border: '1px solid var(--border)',
@@ -84,7 +93,7 @@ export default async function Home() {
             <Link href={`/blog/${featuredPost.slug}`} aria-hidden="true" tabIndex={-1} style={{ position: 'relative', minHeight: '320px', display: 'block' }}>
               <Image 
                 src={featuredPost.coverImage || 'https://images.unsplash.com/photo-1542435503-956c469947f6?w=800&q=80'} 
-                alt="" 
+                alt={featuredPost.title} 
                 fill 
                 priority
                 style={{ objectFit: 'cover' }}
@@ -92,18 +101,18 @@ export default async function Home() {
                 fetchPriority="high"
               />
             </Link>
-            <div style={{ padding: '3.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: '#ffffff' }}>
+            <div style={{ padding: 'clamp(1.25rem, 5vw, 3.5rem)', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: '#ffffff' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
                 <span style={{ background: 'var(--primary)', color: 'white', fontSize: '0.7rem', fontWeight: 900, padding: '4px 10px', borderRadius: '20px', textTransform: 'uppercase' }}>FEATURED</span>
                 <span style={{ color: 'var(--muted-foreground)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{featuredPost.category}</span>
               </div>
-              <h3 style={{ fontSize: '2.5rem', marginBottom: '1.5rem', lineHeight: 1.1, fontWeight: 900, letterSpacing: '-0.03em' }}>
+              <h3 style={{ fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', marginBottom: 'clamp(1rem, 2vw, 1.5rem)', lineHeight: 1.15, fontWeight: 900, letterSpacing: '-0.03em' }}>
                 <Link href={`/blog/${featuredPost.slug}`} style={{ color: 'inherit', textDecoration: 'none' }}>{featuredPost.title}</Link>
               </h3>
-              <p style={{ color: 'var(--muted-foreground)', fontSize: '1.125rem', marginBottom: '2.5rem', lineHeight: 1.6 }}>{featuredPost.excerpt}</p>
+              <p style={{ color: 'var(--muted-foreground)', fontSize: 'clamp(0.95rem, 2vw, 1.125rem)', marginBottom: 'clamp(1.25rem, 3vw, 2.5rem)', lineHeight: 1.6 }}>{featuredPost.excerpt}</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: 'auto' }}>
                 <div style={{ width: '48px', height: '48px', borderRadius: '50%', overflow: 'hidden', position: 'relative', border: '2px solid var(--primary)' }}>
-                  <Image src={featuredPost.authorImage || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80'} alt={featuredPost.author} fill style={{ objectFit: 'cover' }} />
+                  <Image src={featuredPost.authorImage || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80'} alt={featuredPost.author} fill style={{ objectFit: 'cover' }} sizes="48px" />
                 </div>
                 <div>
                   <div style={{ fontWeight: 800, fontSize: '1rem' }}>{featuredPost.author}</div>
@@ -113,6 +122,7 @@ export default async function Home() {
             </div>
           </article>
         </section>
+        </>
       )}
 
       {/* ✅ Visual Web Stories Hub */}
@@ -128,7 +138,7 @@ export default async function Home() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem' }}>
             {publishedStories.map((story) => (
               <Link key={story.id} href={`/stories/${story.slug}`} aria-label={`Web Story: ${story.title}`} style={{ display: 'block', aspectRatio: '3/4', position: 'relative', borderRadius: 'var(--radius)', overflow: 'hidden', boxShadow: 'var(--shadow)' }} className="card-hover">
-                <Image src={story.posterImage || 'https://images.unsplash.com/photo-1542435503-956c469947f6?w=800&q=80'} alt="" fill style={{ objectFit: 'cover' }} sizes="(max-width: 480px) 100vw, 25vw" />
+                <Image src={story.posterImage || 'https://images.unsplash.com/photo-1542435503-956c469947f6?w=800&q=80'} alt={story.title} fill style={{ objectFit: 'cover' }} sizes="(max-width: 480px) 100vw, 25vw" />
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
                   <h3 style={{ color: 'white', fontSize: '1.125rem', fontWeight: 700, margin: 0, lineHeight: 1.3 }}>{story.title}</h3>
                 </div>
@@ -142,11 +152,11 @@ export default async function Home() {
       {recentPosts.length > 0 && (
         <section style={{ marginBottom: '5rem' }}>
           <h2 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '1.5rem' }}>Latest Technical Audits</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 350px), 1fr))', gap: '2rem' }}>
             {recentPosts.map((post) => (
               <article key={post.id} className="glass-panel card-hover" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <Link href={`/blog/${post.slug}`} aria-hidden="true" tabIndex={-1} style={{ position: 'relative', width: '100%', height: '220px', display: 'block' }}>
-                  <Image src={post.coverImage || 'https://images.unsplash.com/photo-1542435503-956c469947f6?w=800&q=80'} alt="" fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
+                  <Image src={post.coverImage || 'https://images.unsplash.com/photo-1542435503-956c469947f6?w=800&q=80'} alt={post.title} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
                 </Link>
                 <div style={{ padding: '2rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <span style={{ color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.75rem', display: 'block' }}>{post.category || 'Insight'}</span>

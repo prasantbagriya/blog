@@ -37,6 +37,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Fallback to cover image if dynamic OG fails
   const ogImageUrl = post.coverImage ? post.coverImage : dynamicOgImage;
 
+  const pubDateIso = new Date(post.date).toISOString();
+  const modDateIso = new Date(post.lastModified || post.date).toISOString();
+
   return {
     title: seoTitle,
     description: seoDescription,
@@ -73,8 +76,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         },
       ],
       type: 'article',
-      publishedTime: post.date,
-      modifiedTime: post.lastModified || post.date,
+      publishedTime: pubDateIso,
+      modifiedTime: modDateIso,
       authors: [post.author],
       tags: post.tags,
       section: post.category,
@@ -100,9 +103,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       'max-video-preview': -1,
     },
     other: {
-      'article:published_time': post.date,
-      'article:modified_time': post.lastModified || post.date,
-      'og:updated_time': post.lastModified || post.date,
+      'article:published_time': pubDateIso,
+      'article:modified_time': modDateIso,
+      'og:updated_time': modDateIso,
       'article:section': post.category,
       'article:tag': (post.tags || []).join(', '),
       'article:author': post.author,
@@ -181,14 +184,22 @@ export default async function BlogPostPage({ params }: Props) {
           url: `${BASE_URL}/author/${(post.author || 'Admin').toLowerCase().replace(/ /g, '-')}`,
           jobTitle: post.authorJobTitle || 'Content Specialist',
           description: post.authorBio,
-          knowsAbout: post.authorKnowsAbout || [],
-          alumniOf: post.authorAlumniOf || [],
-          award: post.authorAwards || [],
-          sameAs: [
-            post.authorSocials?.twitter,
-            post.authorSocials?.linkedin,
-            post.authorSocials?.website,
-          ].filter(Boolean),
+          ...(post.authorKnowsAbout && post.authorKnowsAbout.length > 0 ? { knowsAbout: post.authorKnowsAbout } : {}),
+          ...(post.authorAlumniOf && post.authorAlumniOf.length > 0 ? {
+            alumniOf: post.authorAlumniOf.map(a => ({
+              '@type': 'EducationalOrganization',
+              name: a.name,
+              sameAs: a.sameAs,
+            }))
+          } : {}),
+          ...(post.authorAwards && post.authorAwards.length > 0 ? { award: post.authorAwards } : {}),
+          ...(post.authorSocials && Object.values(post.authorSocials).filter(Boolean).length > 0 ? {
+            sameAs: [
+              post.authorSocials?.twitter,
+              post.authorSocials?.linkedin,
+              post.authorSocials?.website,
+            ].filter(Boolean)
+          } : {}),
         },
         publisher: { '@id': `${BASE_URL}/#organization` },
         image: {
@@ -340,43 +351,92 @@ export default async function BlogPostPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       
-      <nav aria-label="Breadcrumb" className="breadcrumb-nav">
-        <ol className="breadcrumb-list">
-          <li><Link href="/">Home</Link></li>
-          <li>/</li>
-          <li><Link href={`/category/${post.category.toLowerCase()}`}>{post.category}</Link></li>
-          <li>/</li>
-          <li aria-current="page">{post.title}</li>
+      <nav aria-label="Breadcrumb" className="breadcrumb-nav" style={{ marginBottom: '1.5rem', width: '100%' }}>
+        <ol className="breadcrumb-list" style={{ display: 'flex', listStyle: 'none', padding: 0, margin: 0, gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
+          <li><Link href="/" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>Home</Link></li>
+          <li style={{ opacity: 0.5 }}>/</li>
+          <li><Link href={`/category/${post.category.toLowerCase()}`} style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>{post.category}</Link></li>
+          <li style={{ opacity: 0.5 }}>/</li>
+          <li aria-current="page" style={{ color: 'var(--foreground)', fontWeight: 600 }}>{post.title}</li>
         </ol>
       </nav>
 
-      <header style={{ textAlign: 'center', marginBottom: '2.5rem', marginTop: '1.5rem' }}>
-        <h1 className="post-title animate-fade-in">
+      {/* Premium Article Header Wrapper */}
+      <div style={{ textAlign: 'center', marginBottom: '2.5rem', marginTop: '1.5rem', width: '100%' }}>
+        <span style={{ 
+          background: 'rgba(37, 99, 235, 0.08)', 
+          color: 'var(--primary)', 
+          padding: '0.35rem 1rem', 
+          borderRadius: '9999px', 
+          fontSize: '0.75rem', 
+          fontWeight: 800, 
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          display: 'inline-block',
+          marginBottom: '1rem'
+        }}>
+          {post.category}
+        </span>
+        <h1 className="post-title animate-fade-in" style={{ margin: '0 0 1.25rem 0' }}>
           {post.title}
         </h1>
-      </header>
 
-      <div style={{ color: 'var(--muted-foreground)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1.5rem', fontSize: '0.925rem', flexWrap: 'wrap' }}>
+        <div style={{ 
+          color: 'var(--muted-foreground)', 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          gap: '1rem', 
+          fontSize: '0.925rem', 
+          flexWrap: 'wrap',
+          fontWeight: 500
+        }}>
           <span itemProp="author" itemScope itemType="https://schema.org/Person">
-            By <strong itemProp="name">{post.author}</strong>
+            By <strong itemProp="name" style={{ color: 'var(--foreground)' }}>{post.author}</strong>
           </span>
-        <span style={{ opacity: 0.9 }}>|</span>
-        <time dateTime={post.date} itemProp="datePublished">
-          {new Date(post.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-        </time>
-        {post.lastModified && post.lastModified !== post.date && (
-          <>
-            <span style={{ opacity: 0.9 }}>|</span>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--muted-foreground)' }}>
-              Updated: <time dateTime={post.lastModified} itemProp="dateModified">
-                {new Date(post.lastModified).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </time>
-            </span>
-          </>
-        )}
-        <span style={{ opacity: 0.9 }}>|</span>
-        <span><strong>{readTime}</strong> MIN READ</span>
+          <span style={{ opacity: 0.5 }}>•</span>
+          <time dateTime={post.date} itemProp="datePublished">
+            {new Date(post.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+          </time>
+          {post.lastModified && post.lastModified !== post.date && (
+            <>
+              <span style={{ opacity: 0.5 }}>•</span>
+              <span style={{ color: 'var(--primary)', fontWeight: 600 }}>
+                Updated: <time dateTime={post.lastModified} itemProp="dateModified">
+                  {new Date(post.lastModified).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </time>
+              </span>
+            </>
+          )}
+          <span style={{ opacity: 0.5 }}>•</span>
+          <span style={{ background: 'var(--muted)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {readTime} Min Read
+          </span>
+        </div>
       </div>
+
+      {/* Featured Cover Image Section */}
+      {post.coverImage && (
+        <div style={{ 
+          position: 'relative', 
+          width: '100%', 
+          aspectRatio: '21/9', 
+          borderRadius: 'var(--radius)', 
+          overflow: 'hidden', 
+          marginBottom: '3.5rem',
+          boxShadow: 'var(--shadow)',
+          border: '1px solid var(--border)'
+        }}>
+          <Image 
+            src={post.coverImage} 
+            alt={post.title} 
+            fill 
+            priority
+            sizes="(max-width: 1200px) 100vw, 1200px"
+            style={{ objectFit: 'cover' }}
+          />
+        </div>
+      )}
 
       <div style={{ marginTop: '2rem' }}>
         <div 
@@ -536,7 +596,7 @@ export default async function BlogPostPage({ params }: Props) {
                 <Link key={p.id} href={`/blog/${p.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                   <div className="glass-panel card-hover" style={{ overflow: 'hidden' }}>
                     <div style={{ position: 'relative', height: '180px' }}>
-                      <Image src={p.coverImage || 'https://images.unsplash.com/photo-1542435503-956c469947f6?w=800&q=80'} alt="" fill style={{ objectFit: 'cover' }} />
+                      <Image src={p.coverImage || 'https://images.unsplash.com/photo-1542435503-956c469947f6?w=800&q=80'} alt={p.title} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
                     </div>
                     <div style={{ padding: '1.5rem' }}>
                       <div style={{ color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 800, marginBottom: '0.5rem' }}>{p.category}</div>

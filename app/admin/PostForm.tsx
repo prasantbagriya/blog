@@ -371,6 +371,7 @@ export default function PostForm({ post }: PostFormProps) {
    const videoInputRef = useRef<HTMLInputElement>(null);
    const colorInputRef = useRef<HTMLInputElement>(null);
    const sliderInputRef = useRef<HTMLInputElement>(null);
+    const authorInputRef = useRef<HTMLInputElement>(null);
 
    const [lsiKeywords, setLsiKeywords] = useState<string[]>(['Search Intent', 'Entity SEO', 'Dwell Time', 'Core Web Vitals']);
    const [scheduleDate, setScheduleDate] = useState<string>('');
@@ -569,8 +570,13 @@ export default function PostForm({ post }: PostFormProps) {
             setTimeout(() => {
                handleOpenImageModal();
             }, 100);
+         } else {
+            alert(`Upload failed: ${result.error || 'Unknown error'}`);
          }
-      } catch (error) { console.error('Upload failed:', error); }
+      } catch (error) {
+         console.error('Upload failed:', error);
+         alert('Upload failed. Please check connection and file size limits.');
+      }
    };
 
    const handleCoverUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -582,11 +588,34 @@ export default function PostForm({ post }: PostFormProps) {
          const result = await handleUpload(formData);
          if (result.success && result.url) {
             setCoverImage(result.url);
+         } else {
+            alert(`Cover upload failed: ${result.error || 'Unknown error'}`);
          }
-      } catch (error) { console.error('Cover upload failed:', error); }
+      } catch (error) {
+         console.error('Cover upload failed:', error);
+         alert('Cover photo upload failed. Please check connection and file size limits.');
+      }
    };
 
-   const handleColorChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+   const handleAuthorImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+       const file = event.target.files?.[0];
+       if (!file) return;
+       const formData = new FormData();
+       formData.append('file', file);
+       try {
+          const result = await handleUpload(formData);
+          if (result.success && result.url) {
+             setAuthorImage(result.url);
+          } else {
+             alert(`Author image upload failed: ${result.error || 'Unknown error'}`);
+          }
+       } catch (error) {
+          console.error('Author image upload failed:', error);
+          alert('Author image upload failed. Please check connection and file size limits.');
+       }
+    };
+
+    const handleColorChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       const color = event.target.value;
       if (color && editor) {
          editor.chain().focus().setColor(color).run();
@@ -1225,7 +1254,14 @@ export default function PostForm({ post }: PostFormProps) {
                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                               <InputGroup label="AUTHOR NAME" value={author} onChange={setAuthor} placeholder="e.g. Admin or Subject Matter Expert" />
                               <InputGroup label="AUTHOR JOB TITLE" value={authorExpertise} onChange={setAuthorExpertise} placeholder="e.g. Subject Matter Expert" />
-                              <InputGroup label="AUTHOR IMAGE URL" value={authorImage} onChange={setAuthorImage} placeholder="https://..." />
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                 <label style={metaLabelStyle}>AUTHOR IMAGE URL</label>
+                                 <div style={{ display: 'flex', gap: '8px' }}>
+                                    <input value={authorImage} onChange={e => setAuthorImage(e.target.value)} placeholder="https://..." style={{ ...metaInputStyle, flex: 1 }} />
+                                    <button onClick={() => authorInputRef.current?.click()} style={{ ...addNodeBtn, width: 'auto', background: '#fff', border: '1px dashed #cbd5e1', padding: '0 16px', fontSize: '11px', margin: 0 }}>Upload</button>
+                                 </div>
+                                 <input type="file" ref={authorInputRef} onChange={handleAuthorImageUpload} style={{ display: 'none' }} accept="image/*" />
+                              </div>
                               
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                  <label style={metaLabelStyle}>AUTHOR BIOGRAPHY</label>
@@ -1336,7 +1372,13 @@ export default function PostForm({ post }: PostFormProps) {
                               <button onClick={() => coverInputRef.current?.click()} style={{ ...addNodeBtn, background: '#fff', border: '1px dashed #cbd5e1' }}>{coverImage ? 'Change Cover Photo' : 'Upload Cover Photo'}</button>
                               <input type="file" ref={coverInputRef} onChange={handleCoverUpload} style={{ display: 'none' }} accept="image/*" />
                               <div style={{ height: '15px' }} />
-                              <InputGroup label="AUTHOR IMAGE URL" value={authorImage} onChange={setAuthorImage} placeholder="https://..." />
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                 <label style={metaLabelStyle}>AUTHOR IMAGE URL</label>
+                                 <div style={{ display: 'flex', gap: '8px' }}>
+                                    <input value={authorImage} onChange={e => setAuthorImage(e.target.value)} placeholder="https://..." style={{ ...metaInputStyle, flex: 1 }} />
+                                    <button onClick={() => authorInputRef.current?.click()} style={{ ...addNodeBtn, width: 'auto', background: '#fff', border: '1px dashed #cbd5e1', padding: '0 16px', fontSize: '11px', margin: 0 }}>Upload</button>
+                                 </div>
+                              </div>
                            </div>
 
                            <h3 style={sidebarHeadingStyle}>Keywords & Indexing</h3>

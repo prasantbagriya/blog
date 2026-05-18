@@ -105,15 +105,22 @@ const STORIES_PATH = path.join(DATA_DIR, 'stories.json');
 // We refresh this cache every 10 seconds to balance speed and sync
 let cachedPosts: Post[] | null = null;
 let cachedStories: WebStory[] | null = null;
-let lastRead = 0;
+let lastReadPosts = 0;
+let lastReadStories = 0;
 const CACHE_WINDOW = 10000; // 10 seconds
 
 async function fastWrite(filePath: string, data: any) {
   try {
     const json = JSON.stringify(data, null, 2);
     await fs.writeFile(filePath, json, 'utf-8');
-    // Clear cache to force next read to be fresh
-    lastRead = 0;
+    // Clear specific cache to force next read to be fresh
+    if (filePath === DB_PATH) {
+      cachedPosts = null;
+      lastReadPosts = 0;
+    } else if (filePath === STORIES_PATH) {
+      cachedStories = null;
+      lastReadStories = 0;
+    }
   } catch (err) {
     console.error('CRITICAL WRITE ERROR:', err);
   }
@@ -123,10 +130,10 @@ async function loadData<T>(filePath: string): Promise<T[]> {
   const now = Date.now();
   
   // Use memory cache if available and fresh
-  if (filePath === DB_PATH && cachedPosts && (now - lastRead < CACHE_WINDOW)) {
+  if (filePath === DB_PATH && cachedPosts && (now - lastReadPosts < CACHE_WINDOW)) {
     return cachedPosts as unknown as T[];
   }
-  if (filePath === STORIES_PATH && cachedStories && (now - lastRead < CACHE_WINDOW)) {
+  if (filePath === STORIES_PATH && cachedStories && (now - lastReadStories < CACHE_WINDOW)) {
     return cachedStories as unknown as T[];
   }
 
@@ -137,9 +144,14 @@ async function loadData<T>(filePath: string): Promise<T[]> {
     const raw = await fs.readFile(filePath, 'utf-8');
     const data = JSON.parse(raw || '[]');
     
-    if (filePath === DB_PATH) cachedPosts = data;
-    if (filePath === STORIES_PATH) cachedStories = data;
-    lastRead = now;
+    if (filePath === DB_PATH) {
+      cachedPosts = data;
+      lastReadPosts = now;
+    }
+    if (filePath === STORIES_PATH) {
+      cachedStories = data;
+      lastReadStories = now;
+    }
     
     return data;
   } catch (err) {

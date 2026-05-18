@@ -30,12 +30,8 @@ export async function GET() {
     return pubDate >= fortyEightHoursAgo;
   });
 
-  if (newsPosts.length === 0) {
-    newsPosts = posts
-      .filter(p => p.published)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 5);
-  }
+  // Strict Google News compliance: We strictly only include articles published in the last 48 hours.
+  // Including older articles as a fallback causes Google Search Console to throw "Publication date too old" validation errors.
 
   const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"

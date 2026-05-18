@@ -84,11 +84,13 @@ export default async function AuthorPage({ params }: Props) {
           '@id': `${BASE_URL}/#organization`,
           name: 'ChatWizs',
         },
-        sameAs: [
-          authorPost.authorSocials?.twitter,
-          authorPost.authorSocials?.linkedin,
-          authorPost.authorSocials?.website,
-        ].filter(Boolean),
+        ...(authorPost.authorSocials && Object.values(authorPost.authorSocials).filter(Boolean).length > 0 ? {
+          sameAs: [
+            authorPost.authorSocials?.twitter,
+            authorPost.authorSocials?.linkedin,
+            authorPost.authorSocials?.website,
+          ].filter(Boolean)
+        } : {}),
         ...(authorPost.authorAlumniOf?.length
           ? {
               alumniOf: authorPost.authorAlumniOf.map(a => ({

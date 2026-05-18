@@ -6,7 +6,7 @@ import { Metadata } from 'next';
 const BASE_URL = 'https://chatwizs.com';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 60; // ISR: re-generate blog list every 60 seconds
 
 interface Props {
   searchParams: Promise<{ page?: string }>;
@@ -68,7 +68,7 @@ export default async function BlogIndexPage({ searchParams }: Props) {
         url: `${BASE_URL}/blog`,
         name: 'ChatWizs Blog',
         description: 'Expert-verified articles on SEO, technology, and digital marketing.',
-        inLanguage: 'en-US',
+        inLanguage: 'en-IN',
         isPartOf: { '@id': `${BASE_URL}/#website` },
         publisher: { '@id': `${BASE_URL}/#organization` },
         blogPost: paginatedPosts.map(post => ({
@@ -160,7 +160,7 @@ export default async function BlogIndexPage({ searchParams }: Props) {
                 </Link>
                 <div style={{ padding: '2.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <div style={{ marginBottom: '1.25rem', fontSize: '0.75rem', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '1rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                     <span>{post.date}</span>
+                     <span>{new Date(post.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                      <span style={{ opacity: 0.3 }}>|</span>
                      <span>{post.readingTime || 5} MIN READ</span>
                   </div>

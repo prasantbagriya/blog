@@ -354,7 +354,7 @@ body:has(.sovereign-editor-v5-fixed) main {
 
 /* ✅ Blog Post Responsive Title */
 .post-title {
-  font-size: clamp(1.85rem, 6vw, 3.5rem);
+  font-size: clamp(1.5rem, 5.5vw, 2.75rem);
   font-weight: 900;
   line-height: 1.15;
   letter-spacing: -0.04em;
@@ -553,6 +553,15 @@ body:has(.auth-fullscreen-container) main {
   background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
   filter: blur(90px);
   pointer-events: none;
+}
+
+/* ✅ Hide scrollbars for clean custom Slider layouts */
+div[data-image-slider="true"]::-webkit-scrollbar {
+  display: none !important;
+}
+div[data-image-slider="true"] {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 
