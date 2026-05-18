@@ -1,5 +1,7 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import type { NextConfig } from "next";
+
+const nextConfig: any = {
+  output: 'standalone',
   poweredByHeader: false,
   compress: true,
   productionBrowserSourceMaps: false,
