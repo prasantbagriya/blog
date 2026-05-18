@@ -5,7 +5,7 @@
   <link>https://chatwizs.com</link>
   <description>Expert SEO and Technology Insights for 2026</description>
   <language>en-us</language>
-  <lastBuildDate>Mon, 18 May 2026 05:29:05 GMT</lastBuildDate>
+  <lastBuildDate>Mon, 18 May 2026 05:46:14 GMT</lastBuildDate>
   <atom:link href="https://chatwizs.com/feed.xml" rel="self" type="application/rss+xml" />
   
   <item>
@@ -23,6 +23,15 @@
     <description><![CDATA[Test Post 1]]></description>
     <pubDate>Sun, 17 May 2026 00:00:00 GMT</pubDate>
     <guid isPermaLink="true">https://chatwizs.com/blog/test-post-1</guid>
+    <dc:creator>Admin</dc:creator>
+    <category>General</category>
+  </item>
+  <item>
+    <title>Gold Import Duty Raised from 6% to 15%: Full Impact Explained</title>
+    <link>https://chatwizs.com/blog/gold-import-duty</link>
+    <description><![CDATA[On 10th May 2026, Prime Minister Narendra Modi spoke directly to the people of India. In a simple and emotional appeal, he requested everyone to stop buying gold for weddings and functions for one year.]]></description>
+    <pubDate>Sun, 17 May 2026 00:00:00 GMT</pubDate>
+    <guid isPermaLink="true">https://chatwizs.com/blog/gold-import-duty</guid>
     <dc:creator>Admin</dc:creator>
     <category>General</category>
   </item>

@@ -66,7 +66,7 @@ export default async function WebStoryPage({ params }: Props) {
         poster-square-src={story.posterImage}
         poster-landscape-src={story.posterImage}
       >
-        {story.slides.map((slide, index) => (
+        {(story.slides || []).map((slide, index) => (
           <amp-story-page id={`slide-${index + 1}`} key={slide.id} auto-advance-after="7s">
             <amp-story-grid-layer template="fill">
               <amp-img src={slide.image} width="720" height="1280" layout="responsive" alt={story.title} />

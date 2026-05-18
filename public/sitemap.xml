@@ -55,5 +55,17 @@
       <image:title>Test Post 1</image:title>
     </image:image>
   </url>
+  <url>
+    <loc>https://chatwizs.com/blog/gold-import-duty</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en-IN" href="https://chatwizs.com/blog/gold-import-duty" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://chatwizs.com/blog/gold-import-duty" />
+    <image:image>
+      <image:loc>https://chatwizs.com/uploads/media-1779021145557-979760319.jpeg</image:loc>
+      <image:title>Gold Import Duty Raised from 6% to 15%: Full Impact Explained</image:title>
+    </image:image>
+  </url>
   
 </urlset>
