@@ -28,6 +28,12 @@ export const metadata: Metadata = {
   category: 'Technology',
   alternates: {
     canonical: '/',
+    // ✅ GEO SEO 2026: hreflang signals for India English audience
+    // Since there's only one language version, we signal the target region via metadata
+    languages: {
+      'en-IN': 'https://chatwizs.com',
+      'x-default': 'https://chatwizs.com',
+    },
     types: {
       'application/rss+xml': '/feed.xml',
       'application/atom+xml': '/feed.xml',
@@ -39,7 +45,9 @@ export const metadata: Metadata = {
     type: "website",
     url: 'https://chatwizs.com',
     siteName: 'ChatWizs',
-    locale: 'en_US',
+    // ✅ GEO SEO: en_IN locale signals India-targeted English content to Google
+    locale: 'en_IN',
+    alternateLocale: ['en_US'],
     images: [{ url: 'https://chatwizs.com/og-image.jpg', width: 1200, height: 630, alt: 'ChatWizs — Expert Insights & SEO Optimized Content' }],
   },
   twitter: {
@@ -108,6 +116,8 @@ export default function RootLayout({
             contactType: 'customer support',
             email: 'support@chatwizs.com',
             availableLanguage: ['English'],
+            // ✅ GEO SEO: India contact point signal
+            areaServed: 'IN',
           },
           {
             '@type': 'ContactPoint',
@@ -116,6 +126,19 @@ export default function RootLayout({
             availableLanguage: ['English'],
           },
         ],
+        // ✅ GEO SEO 2026: Geographic entity signals for India targeting
+        areaServed: [
+          { '@type': 'Country', name: 'India', sameAs: 'https://www.wikidata.org/wiki/Q668' },
+          { '@type': 'Country', name: 'United States', sameAs: 'https://www.wikidata.org/wiki/Q30' },
+        ],
+        audience: {
+          '@type': 'Audience',
+          audienceType: 'Digital Marketing Professionals, SEO Experts, Technology Enthusiasts',
+          geographicArea: {
+            '@type': 'Country',
+            name: 'India',
+          },
+        },
         publishingPrinciples: `${baseUrl}/about#editorial-standards`,
         ownershipFundingInfo: `${baseUrl}/about#mission`,
         actionableFeedbackPolicy: `${baseUrl}/contact`,
@@ -134,7 +157,8 @@ export default function RootLayout({
         name: 'ChatWizs',
         description: 'Expert-verified articles on SEO, technology, and digital marketing.',
         publisher: { '@id': `${baseUrl}/#organization` },
-        inLanguage: 'en-US',
+        // ✅ GEO SEO 2026: BCP-47 language code signals India English audience
+        inLanguage: 'en-IN',
         potentialAction: {
           '@type': 'SearchAction',
           target: {
@@ -143,6 +167,21 @@ export default function RootLayout({
           },
           'query-input': 'required name=search_term_string',
         },
+      },
+      // ✅ GEO SEO 2026: Speakable WebPage for AI Overview & Google Assistant eligibility
+      {
+        '@type': 'WebPage',
+        '@id': `${baseUrl}/#homepage`,
+        url: baseUrl,
+        name: 'ChatWizs | Expert Insights & SEO Optimized Content',
+        isPartOf: { '@id': `${baseUrl}/#website` },
+        about: { '@id': `${baseUrl}/#organization` },
+        speakable: {
+          '@type': 'SpeakableSpecification',
+          cssSelector: ['h1', '.hero-p', '.post-excerpt'],
+        },
+        // ✅ GEO SEO: inLanguage with BCP-47 India English
+        inLanguage: 'en-IN',
       },
     ],
   };

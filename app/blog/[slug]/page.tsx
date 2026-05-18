@@ -44,6 +44,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     authors: [{ name: post.author || 'Admin', url: `${BASE_URL}/author/${(post.author || 'Admin').toLowerCase().replace(/ /g, '-')}` }],
     alternates: {
       canonical: canonical,
+      // ✅ GEO SEO 2026: hreflang link alternates for India targeting
+      // Signals to Google this content targets India English audiences
+      languages: {
+        'en-IN': canonical,
+        'x-default': canonical,
+      },
     },
     openGraph: {
       title: post.ogTitle || seoTitle,
@@ -74,7 +80,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       section: post.category,
       siteName: 'ChatWizs',
       url: `${BASE_URL}/blog/${slug}`,
-      locale: 'en_US',
+      // ✅ GEO SEO: en_IN locale signals India audience to social crawlers
+      locale: 'en_IN',
+      alternateLocale: ['en_US'],
     },
     twitter: {
       card: 'summary_large_image',
@@ -98,6 +106,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       'article:section': post.category,
       'article:tag': (post.tags || []).join(', '),
       'article:author': post.author,
+      // ✅ GEO SEO 2026: Classic geographic meta tags
+      // These are still picked up by Bing, DuckDuckGo, and some Google signals
+      'geo.region': post.targetRegion ? post.targetRegion : 'IN',
+      'geo.placename': 'India',
+      'content-language': post.targetLanguage || 'en-IN',
+      // ✅ GEO SEO: AI Overview / GEO entity freshness signal
+      'article:content_tier': 'free',
     },
   };
 }
@@ -123,18 +138,28 @@ export default async function BlogPostPage({ params }: Props) {
         url: `${BASE_URL}/blog/${post.slug}`,
         name: post.title,
         description: post.metaDescription || post.excerpt,
-        inLanguage: 'en-US',
+        // ✅ GEO SEO 2026: BCP-47 language code for India English audience targeting
+        inLanguage: post.inLanguage || post.targetLanguage || 'en-IN',
         isPartOf: { '@id': `${BASE_URL}/#website` },
         primaryImageOfPage: { '@id': `${BASE_URL}/blog/${post.slug}#primaryimage` },
         breadcrumb: { '@id': `${BASE_URL}/blog/${post.slug}#breadcrumb` },
         datePublished: post.date,
         dateModified: post.lastModified || post.date,
-        // ✅ Speakable: Voice Search / Google Assistant eligibility
+        // ✅ Speakable: Voice Search / Google Assistant / AI Overview eligibility
         speakable: {
           '@type': 'SpeakableSpecification',
           cssSelector: ['h1', '#ai-snapshot', '.post-content p:first-of-type'],
         },
-        // ✅ Potental Actions: Deep linking signal
+        // ✅ GEO SEO: Geographic audience signal
+        audience: {
+          '@type': 'Audience',
+          audienceType: 'Digital Marketing Professionals, SEO Experts',
+          geographicArea: {
+            '@type': 'Country',
+            name: post.targetRegion === 'US' ? 'United States' : 'India',
+          },
+        },
+        // ✅ Potential Actions: Deep linking signal
         potentialAction: {
           '@type': 'ReadAction',
           target: `${BASE_URL}/blog/${post.slug}`,
@@ -179,9 +204,21 @@ export default async function BlogPostPage({ params }: Props) {
         keywords: (post.tags || []).join(', '),
         wordCount,
         timeRequired: `PT${readTime}M`,
-        inLanguage: 'en-US',
+        // ✅ GEO SEO 2026: BCP-47 India English language signal
+        inLanguage: post.inLanguage || post.targetLanguage || 'en-IN',
         isAccessibleForFree: true,
         isPartOf: { '@id': `${BASE_URL}/#website` },
+        // ✅ GEO SEO: Audience geographic entity signal
+        audience: {
+          '@type': 'Audience',
+          geographicArea: {
+            '@type': 'Country',
+            name: post.targetRegion === 'US' ? 'United States' : 'India',
+            sameAs: post.targetRegion === 'US' 
+              ? 'https://www.wikidata.org/wiki/Q30' 
+              : 'https://www.wikidata.org/wiki/Q668',
+          },
+        },
         // ✅ EEAT: Fact-check signal
         ...(post.factCheckedBy ? {
           reviewedBy: {
@@ -303,13 +340,13 @@ export default async function BlogPostPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       
-      <nav aria-label="Breadcrumb" style={{ marginBottom: '2rem', fontSize: '0.875rem' }}>
-        <ol style={{ listStyle: 'none', padding: 0, display: 'flex', gap: '0.5rem', color: 'var(--muted-foreground)' }}>
+      <nav aria-label="Breadcrumb" className="breadcrumb-nav">
+        <ol className="breadcrumb-list">
           <li><Link href="/">Home</Link></li>
           <li>/</li>
           <li><Link href={`/category/${post.category.toLowerCase()}`}>{post.category}</Link></li>
           <li>/</li>
-          <li aria-current="page" style={{ color: 'var(--foreground)', fontWeight: 500 }}>{post.title}</li>
+          <li aria-current="page">{post.title}</li>
         </ol>
       </nav>
 
@@ -512,24 +549,23 @@ export default async function BlogPostPage({ params }: Props) {
           </div>
         )}
 
-        <div className="glass-panel" style={{ padding: '2.5rem', display: 'flex', gap: '2rem', alignItems: 'flex-start', marginBottom: '4rem', background: 'linear-gradient(to right, #f8fafc, #ffffff)' }}>
-          <Link href={`/author/${(post.author || 'admin').toLowerCase().replace(/ /g, '-')}`}
-            style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '3px solid var(--primary)', display: 'block' }}>
+        <div className="glass-panel author-bio-card">
+          <Link href={`/author/${(post.author || 'admin').toLowerCase().replace(/ /g, '-')}`} className="author-bio-avatar">
             <Image src={post.authorImage || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80'} alt={post.author} fill style={{ objectFit: 'cover' }} />
           </Link>
-          <div>
-            <h3 style={{ marginBottom: '0.25rem', fontSize: '1.25rem' }}>
+          <div className="author-bio-content">
+            <h3 className="author-bio-name">
               About <Link href={`/author/${(post.author || 'admin').toLowerCase().replace(/ /g, '-')}`} style={{ color: 'inherit', textDecoration: 'none' }}>{post.author}</Link>
             </h3>
-            <div style={{ color: 'var(--primary)', fontSize: '0.9375rem', fontWeight: 700, marginBottom: '0.75rem' }}>{post.authorJobTitle}</div>
-            <p style={{ color: 'var(--muted-foreground)', marginBottom: '1.25rem', fontSize: '1rem', lineHeight: 1.6 }}>
+            <div className="author-bio-title">{post.authorJobTitle}</div>
+            <p className="author-bio-text">
               {post.authorBio || `${post.author} is a lead editorial contributor at ChatWizs, specializing in technical SEO and modern web architectures.`}
             </p>
-            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-              <Link href={`/author/${(post.author || 'admin').toLowerCase().replace(/ /g, '-')}`} style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none' }}>View all articles →</Link>
-              {post.authorSocials?.website && <a href={post.authorSocials.website} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none' }}>Portfolio ↗</a>}
-              {post.authorSocials?.twitter && <a href={post.authorSocials.twitter} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none' }}>Twitter ↗</a>}
-              {post.authorSocials?.linkedin && <a href={post.authorSocials.linkedin} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none' }}>LinkedIn ↗</a>}
+            <div className="author-bio-links">
+              <Link href={`/author/${(post.author || 'admin').toLowerCase().replace(/ /g, '-')}`} className="author-bio-link">View all articles →</Link>
+              {post.authorSocials?.website && <a href={post.authorSocials.website} target="_blank" rel="noopener noreferrer" className="author-bio-link">Portfolio ↗</a>}
+              {post.authorSocials?.twitter && <a href={post.authorSocials.twitter} target="_blank" rel="noopener noreferrer" className="author-bio-link">Twitter ↗</a>}
+              {post.authorSocials?.linkedin && <a href={post.authorSocials.linkedin} target="_blank" rel="noopener noreferrer" className="author-bio-link">LinkedIn ↗</a>}
             </div>
           </div>
         </div>

@@ -312,6 +312,7 @@ export default function PostForm({ post }: PostFormProps) {
    const [excerpt, setExcerpt] = useState(post?.excerpt || '');
    const [coverImage, setCoverImage] = useState(post?.coverImage || '');
    const [authorImage, setAuthorImage] = useState(post?.authorImage || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80');
+   const [author, setAuthor] = useState(post?.author || 'Admin');
    const [focusKeyword, setFocusKeyword] = useState('');
    const [category, setCategory] = useState(post?.category || 'General');
    const [tags, setTags] = useState<string[]>(post?.tags || []);
@@ -331,6 +332,10 @@ export default function PostForm({ post }: PostFormProps) {
    const [sentiment, setSentiment] = useState<'neutral' | 'positive' | 'authoritative'>('authoritative');
    const [helpfulScore, setHelpfulScore] = useState(0);
    const [userIntent, setUserIntent] = useState<'informational' | 'transactional' | 'navigational'>('informational');
+   // ✅ GEO SEO 2026: Geographic targeting state
+   const [targetRegion, setTargetRegion] = useState<string>(post?.targetRegion || 'IN');
+   const [targetLanguage, setTargetLanguage] = useState<string>(post?.targetLanguage || 'en-IN');
+   const [contentScope, setContentScope] = useState<'global' | 'india' | 'regional'>(post?.contentScope || 'india');
    const [informationGain, setInformationGain] = useState(0);
    const [humanScore, setHumanScore] = useState(0);
    const [clusterStrength, setClusterStrength] = useState(0);
@@ -761,13 +766,17 @@ export default function PostForm({ post }: PostFormProps) {
             category, tags, faqs,
             published,
             date: post?.date || format(new Date(), 'yyyy-MM-dd'),
-            author: 'Admin',
+            author: author || 'Admin',
             factCheckedBy, factCheckerRole,
             isAiAssisted: eeatChecklist.credentialsIncluded,
             authorJobTitle: authorExpertise,
             authorBio, researchMethodology, sources,
             searchIntent: userIntent,
             seoScore,
+            // ✅ GEO SEO 2026: Geographic targeting fields
+            targetRegion,
+            targetLanguage,
+            contentScope,
          };
          await handleSavePost(updatedPost);
          router.push('/admin');
@@ -1214,6 +1223,15 @@ export default function PostForm({ post }: PostFormProps) {
                         <motion.div key="eeat" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                            <h3 style={sidebarHeadingStyle}>EEAT Verification</h3>
                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                              <InputGroup label="AUTHOR NAME" value={author} onChange={setAuthor} placeholder="e.g. Admin or Subject Matter Expert" />
+                              <InputGroup label="AUTHOR JOB TITLE" value={authorExpertise} onChange={setAuthorExpertise} placeholder="e.g. Subject Matter Expert" />
+                              <InputGroup label="AUTHOR IMAGE URL" value={authorImage} onChange={setAuthorImage} placeholder="https://..." />
+                              
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                 <label style={metaLabelStyle}>AUTHOR BIOGRAPHY</label>
+                                 <textarea placeholder="Write a short professional bio..." value={authorBio} onChange={e => setAuthorBio(e.target.value)} style={metaTextAreaStyle} />
+                              </div>
+
                               <InputGroup label="FACT CHECKED BY" value={factCheckedBy} onChange={setFactCheckedBy} placeholder="e.g. Dr. Sarah Connor" />
                               <InputGroup label="FACT CHECKER ROLE" value={factCheckerRole} onChange={setFactCheckerRole} placeholder="e.g. Senior Medical Editor" />
                               

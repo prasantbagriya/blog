@@ -49,7 +49,14 @@ export interface Post {
   searchIntent?: 'informational' | 'transactional' | 'commercial' | 'navigational'; 
   isPillarPage?: boolean;
   semanticMentions?: { name: string; sameAs: string }[]; 
-  integrityHash?: string; 
+  integrityHash?: string;
+  // ✅ GEO SEO 2026: Geographic & language targeting signals
+  targetRegion?: string;           // e.g. 'IN', 'US', 'GB' (ISO 3166-1 alpha-2)
+  targetLanguage?: string;         // e.g. 'en-IN', 'hi-IN', 'en-US'
+  geoCoordinates?: { lat: number; lng: number }; // Precise location (for LocalBusiness schema)
+  speakableContent?: boolean;      // Flag for Google Assistant / AI Overview speakable optimization
+  contentScope?: 'global' | 'india' | 'regional'; // Geographic content scope
+  inLanguage?: string;             // BCP 47 language code e.g. 'en-IN'
 }
 
 export interface StorySlide {

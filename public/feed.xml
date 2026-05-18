@@ -5,8 +5,26 @@
   <link>https://chatwizs.com</link>
   <description>Expert SEO and Technology Insights for 2026</description>
   <language>en-us</language>
-  <lastBuildDate>Sun, 17 May 2026 11:22:09 GMT</lastBuildDate>
+  <lastBuildDate>Mon, 18 May 2026 05:18:01 GMT</lastBuildDate>
   <atom:link href="https://chatwizs.com/feed.xml" rel="self" type="application/rss+xml" />
   
+  <item>
+    <title>Test Post 1</title>
+    <link>https://chatwizs.com/blog/test-post-1</link>
+    <description><![CDATA[Test Post 1]]></description>
+    <pubDate>Sun, 17 May 2026 00:00:00 GMT</pubDate>
+    <guid isPermaLink="true">https://chatwizs.com/blog/test-post-1</guid>
+    <dc:creator>Admin</dc:creator>
+    <category>General</category>
+  </item>
+  <item>
+    <title>Test Post 1</title>
+    <link>https://chatwizs.com/blog/test-post-1</link>
+    <description><![CDATA[Test Post 1]]></description>
+    <pubDate>Sun, 17 May 2026 00:00:00 GMT</pubDate>
+    <guid isPermaLink="true">https://chatwizs.com/blog/test-post-1</guid>
+    <dc:creator>Admin</dc:creator>
+    <category>General</category>
+  </item>
 </channel>
 </rss>
