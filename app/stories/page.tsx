@@ -81,7 +81,7 @@ export default async function StoriesIndexPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1.5rem' }}>
           {stories.map((story) => (
             <Link key={story.id} href={`/stories/${story.slug}`} className="card-hover" style={{ display: 'block', position: 'relative', aspectRatio: '3/4', borderRadius: 'var(--radius)', overflow: 'hidden', textDecoration: 'none' }}>
-              <Image src={story.posterImage} alt="" fill style={{ objectFit: 'cover' }} sizes="(max-width: 480px) 50vw, (max-width: 768px) 33vw, 200px" />
+              <Image src={story.posterImage || 'https://images.unsplash.com/photo-1542435503-956c469947f6?w=800&q=80'} alt="" fill style={{ objectFit: 'cover' }} sizes="(max-width: 480px) 50vw, (max-width: 768px) 33vw, 200px" />
               <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '1.25rem 1rem', background: 'linear-gradient(to top, rgba(0,0,0,0.92), rgba(0,0,0,0.3) 60%, transparent)' }}>
                 <h2 style={{ fontSize: '0.875rem', fontWeight: 700, lineHeight: 1.2, color: 'white', margin: 0 }}>{story.title}</h2>
               </div>

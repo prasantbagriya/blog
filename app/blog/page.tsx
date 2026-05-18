@@ -156,7 +156,7 @@ export default async function BlogIndexPage({ searchParams }: Props) {
             {paginatedPosts.map((post) => (
               <article key={post.id} className="glass-panel card-hover" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', background: '#fff' }}>
                 <Link href={`/blog/${post.slug}`} style={{ position: 'relative', width: '100%', height: '240px', display: 'block' }}>
-                  <Image src={post.coverImage} alt={post.title} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
+                  <Image src={post.coverImage || 'https://images.unsplash.com/photo-1542435503-956c469947f6?w=800&q=80'} alt={post.title} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
                 </Link>
                 <div style={{ padding: '2.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <div style={{ marginBottom: '1.25rem', fontSize: '0.75rem', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '1rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>

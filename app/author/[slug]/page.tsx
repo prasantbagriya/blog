@@ -227,7 +227,7 @@ export default async function AuthorPage({ params }: Props) {
             <article key={post.id} className="glass-panel card-hover" style={{ display: 'flex', gap: '1.5rem', overflow: 'hidden', padding: 0, alignItems: 'stretch' }}>
               <Link href={`/blog/${post.slug}`} aria-hidden="true" tabIndex={-1}
                 style={{ position: 'relative', width: '180px', flexShrink: 0, display: 'block', minHeight: '140px' }}>
-                <Image src={post.coverImage} alt="" fill style={{ objectFit: 'cover' }} sizes="180px" />
+                <Image src={post.coverImage || 'https://images.unsplash.com/photo-1542435503-956c469947f6?w=800&q=80'} alt="" fill style={{ objectFit: 'cover' }} sizes="180px" />
               </Link>
               <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <span style={{ color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>

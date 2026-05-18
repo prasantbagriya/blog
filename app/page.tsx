@@ -83,7 +83,7 @@ export default async function Home() {
           }}>
             <Link href={`/blog/${featuredPost.slug}`} aria-hidden="true" tabIndex={-1} style={{ position: 'relative', minHeight: '320px', display: 'block' }}>
               <Image 
-                src={featuredPost.coverImage} 
+                src={featuredPost.coverImage || 'https://images.unsplash.com/photo-1542435503-956c469947f6?w=800&q=80'} 
                 alt="" 
                 fill 
                 priority
@@ -128,7 +128,7 @@ export default async function Home() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem' }}>
             {publishedStories.map((story) => (
               <Link key={story.id} href={`/stories/${story.slug}`} aria-label={`Web Story: ${story.title}`} style={{ display: 'block', aspectRatio: '3/4', position: 'relative', borderRadius: 'var(--radius)', overflow: 'hidden', boxShadow: 'var(--shadow)' }} className="card-hover">
-                <Image src={story.posterImage} alt="" fill style={{ objectFit: 'cover' }} sizes="(max-width: 480px) 100vw, 25vw" />
+                <Image src={story.posterImage || 'https://images.unsplash.com/photo-1542435503-956c469947f6?w=800&q=80'} alt="" fill style={{ objectFit: 'cover' }} sizes="(max-width: 480px) 100vw, 25vw" />
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
                   <h3 style={{ color: 'white', fontSize: '1.125rem', fontWeight: 700, margin: 0, lineHeight: 1.3 }}>{story.title}</h3>
                 </div>
@@ -146,7 +146,7 @@ export default async function Home() {
             {recentPosts.map((post) => (
               <article key={post.id} className="glass-panel card-hover" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <Link href={`/blog/${post.slug}`} aria-hidden="true" tabIndex={-1} style={{ position: 'relative', width: '100%', height: '220px', display: 'block' }}>
-                  <Image src={post.coverImage} alt="" fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
+                  <Image src={post.coverImage || 'https://images.unsplash.com/photo-1542435503-956c469947f6?w=800&q=80'} alt="" fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
                 </Link>
                 <div style={{ padding: '2rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <span style={{ color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.75rem', display: 'block' }}>{post.category || 'Insight'}</span>

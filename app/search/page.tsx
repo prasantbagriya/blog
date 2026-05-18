@@ -181,7 +181,7 @@ export default async function SearchPage({ searchParams }: Props) {
                 tabIndex={-1}
                 style={{ position: 'relative', width: '160px', flexShrink: 0, display: 'block', minHeight: '130px' }}
               >
-                <Image src={post.coverImage} alt={post.title} fill style={{ objectFit: 'cover' }} sizes="160px" />
+                <Image src={post.coverImage || 'https://images.unsplash.com/photo-1542435503-956c469947f6?w=800&q=80'} alt={post.title} fill style={{ objectFit: 'cover' }} sizes="160px" />
               </Link>
               <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.5rem' }}>

@@ -152,7 +152,7 @@ export default async function CategoryPage({ params }: Props) {
             >
               <Link href={`/blog/${post.slug}`} aria-hidden="true" tabIndex={-1} style={{ position: 'relative', width: '100%', height: '200px', display: 'block' }}>
                 <Image
-                  src={post.coverImage}
+                  src={post.coverImage || 'https://images.unsplash.com/photo-1542435503-956c469947f6?w=800&q=80'}
                   alt={post.title}
                   fill
                   style={{ objectFit: 'cover' }}

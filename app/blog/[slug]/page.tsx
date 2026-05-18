@@ -536,7 +536,7 @@ export default async function BlogPostPage({ params }: Props) {
                 <Link key={p.id} href={`/blog/${p.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                   <div className="glass-panel card-hover" style={{ overflow: 'hidden' }}>
                     <div style={{ position: 'relative', height: '180px' }}>
-                      <Image src={p.coverImage} alt="" fill style={{ objectFit: 'cover' }} />
+                      <Image src={p.coverImage || 'https://images.unsplash.com/photo-1542435503-956c469947f6?w=800&q=80'} alt="" fill style={{ objectFit: 'cover' }} />
                     </div>
                     <div style={{ padding: '1.5rem' }}>
                       <div style={{ color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 800, marginBottom: '0.5rem' }}>{p.category}</div>
