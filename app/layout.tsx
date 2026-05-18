@@ -126,6 +126,24 @@ export default function RootLayout({
             availableLanguage: ['English'],
           },
         ],
+        // ✅ GEO SEO 2026: Geographic headquarters location coordinates signal
+        location: {
+          '@type': 'Place',
+          name: 'ChatWizs Headquarters',
+          address: {
+            '@type': 'PostalAddress',
+            streetAddress: 'Bandra Kurla Complex, Bandra East',
+            addressLocality: 'Mumbai',
+            addressRegion: 'Maharashtra',
+            postalCode: '400051',
+            addressCountry: 'IN',
+          },
+          geo: {
+            '@type': 'GeoCoordinates',
+            latitude: '19.0596',
+            longitude: '72.8683',
+          },
+        },
         // ✅ GEO SEO 2026: Geographic entity signals for India targeting
         areaServed: [
           { '@type': 'Country', name: 'India', sameAs: 'https://www.wikidata.org/wiki/Q668' },
@@ -187,8 +205,14 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html lang="en-IN" className={inter.variable} suppressHydrationWarning>
       <head>
+        {/* ✅ GEO SEO 2026: Classic geographic metadata tags for regional target engines */}
+        <meta name="geo.region" content="IN-MH" />
+        <meta name="geo.placename" content="Mumbai, India" />
+        <meta name="geo.position" content="19.0596;72.8683" />
+        <meta name="ICBM" content="19.0596, 72.8683" />
+
         {/* ✅ Preconnect: Reduces connection latency for external resources */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

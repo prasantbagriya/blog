@@ -41,26 +41,32 @@ async function generateSeoAssets() {
   const publishedPosts = posts.filter(p => p && p.published);
   const publishedStories = stories.filter(s => s && s.published);
 
-  // 1. Standard Sitemap (with Image Support)
+  // 1. Standard Sitemap (with Image and Geographic hreflang support)
   let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>${BASE_URL}/</loc>
     <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en-IN" href="${BASE_URL}/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="${BASE_URL}/" />
   </url>
   <url>
     <loc>${BASE_URL}/blog</loc>
     <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en-IN" href="${BASE_URL}/blog" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="${BASE_URL}/blog" />
   </url>
   <url>
     <loc>${BASE_URL}/stories</loc>
     <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en-IN" href="${BASE_URL}/stories" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="${BASE_URL}/stories" />
   </url>
   <url><loc>${BASE_URL}/about</loc><lastmod>${new Date().toISOString().split('T')[0]}</lastmod><priority>0.7</priority></url>
   <url><loc>${BASE_URL}/contact</loc><lastmod>${new Date().toISOString().split('T')[0]}</lastmod><priority>0.5</priority></url>
@@ -72,12 +78,15 @@ async function generateSeoAssets() {
     const loc = escapeXml(`${BASE_URL}/blog/${p.slug}`);
     const imgLoc = escapeXml(p.coverImage.startsWith('http') ? p.coverImage : BASE_URL + p.coverImage);
     const title = escapeXml(p.title);
+    const targetLang = p.targetLanguage || 'en-IN';
     return `
   <url>
     <loc>${loc}</loc>
     <lastmod>${p.lastModified || p.date}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="${targetLang}" href="${loc}" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="${loc}" />
     <image:image>
       <image:loc>${imgLoc}</image:loc>
       <image:title>${title}</image:title>
@@ -94,6 +103,8 @@ async function generateSeoAssets() {
     <lastmod>${s.lastModified || s.date}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en-IN" href="${loc}" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="${loc}" />
     <image:image>
       <image:loc>${imgLoc}</image:loc>
       <image:title>${title}</image:title>

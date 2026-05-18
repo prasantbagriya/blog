@@ -154,6 +154,18 @@ export default function AdminPage() {
           });
         }
       }
+
+      // 6. Warning: Missing Geographic/Language Targeting
+      if (!p.targetRegion || !p.targetLanguage) {
+        alerts.push({
+          id: `geo-${p.id}`,
+          postTitle: p.title || 'Untitled Post',
+          postId: p.id,
+          severity: 'warning',
+          message: 'Missing Geographic/Language Targeting: Define targetRegion (e.g., IN) and targetLanguage (e.g., en-IN) to ensure Google GSC registers geographic relevance for AI Overviews.',
+          type: 'SEO'
+        });
+      }
     });
 
     return alerts.sort((a, b) => {
