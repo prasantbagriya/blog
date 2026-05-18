@@ -95,14 +95,15 @@ export default function MobileNav() {
             top: 'var(--header-height)',
             left: 0,
             right: 0,
-            bottom: 0,
-            background: 'rgba(255,255,255,0.97)',
+            height: 'calc(100vh - var(--header-height))',
+            background: 'rgba(255,255,255,0.98)',
             backdropFilter: 'blur(12px)',
             zIndex: 99,
             display: 'flex',
             flexDirection: 'column',
             padding: '2rem 1.5rem',
             animation: 'fadeIn 0.2s ease',
+            overflowY: 'auto',
           }}
         >
           <nav aria-label="Mobile Navigation">

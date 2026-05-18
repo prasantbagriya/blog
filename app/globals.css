@@ -351,3 +351,14 @@ body:has(.sovereign-editor-v5-fixed) main {
   padding: 0 !important;
   margin: 0 !important;
 }
+
+/* ✅ Blog Post Responsive Title */
+.post-title {
+  font-size: clamp(1.85rem, 6vw, 3.5rem);
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  margin-bottom: 1.5rem;
+  color: var(--foreground);
+}
+

@@ -313,8 +313,8 @@ export default async function BlogPostPage({ params }: Props) {
         </ol>
       </nav>
 
-      <header style={{ textAlign: 'center', marginBottom: '4rem' }}>
-        <h1 className="post-title animate-fade-in" style={{ fontSize: '3.5rem', fontWeight: 900, marginBottom: '1.5rem', lineHeight: 1.1, letterSpacing: '-0.04em' }}>
+      <header style={{ textAlign: 'center', marginBottom: '2.5rem', marginTop: '1.5rem' }}>
+        <h1 className="post-title animate-fade-in">
           {post.title}
         </h1>
       </header>
