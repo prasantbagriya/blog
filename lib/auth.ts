@@ -1,8 +1,15 @@
 import { cookies } from 'next/headers';
 
-// ✅ Centralized active session store (token -> expiry)
-export const activeSessions = new Map<string, number>();
+// ✅ Ensure activeSessions is shared globally across Next.js split bundles
+const globalForAuth = global as unknown as {
+  activeSessions: Map<string, number>;
+};
+
+export const activeSessions = globalForAuth.activeSessions || new Map<string, number>();
+globalForAuth.activeSessions = activeSessions;
+
 export const SESSION_TTL = 60 * 60 * 24 * 7 * 1000; // 7 days in ms
+
 
 // ✅ Prune expired sessions
 export function pruneExpiredSessions() {
