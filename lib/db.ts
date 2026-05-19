@@ -165,7 +165,7 @@ export async function getStories(): Promise<WebStory[]> {
 
 export async function getStoryBySlug(slug: string): Promise<WebStory | undefined> {
   const stories = await getStories();
-  return stories.find(s => s.slug === slug);
+  return stories.find(s => s.slug.toLowerCase() === slug.toLowerCase());
 }
 
 export async function saveStory(story: WebStory) {
@@ -188,7 +188,7 @@ export async function getPosts(): Promise<Post[]> {
 
 export async function getPostBySlug(slug: string): Promise<Post | undefined> {
   const posts = await getPosts();
-  return posts.find(p => p.slug === slug);
+  return posts.find(p => p.slug.toLowerCase() === slug.toLowerCase());
 }
 
 export async function savePost(post: Post) {

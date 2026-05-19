@@ -1,38 +1,14 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { randomBytes, createHash } from 'crypto';
+import { activeSessions, SESSION_TTL, pruneExpiredSessions, isValidSession } from '@/lib/auth';
 
 // ✅ In-memory rate limiting (resets on server restart — acceptable for small blog)
 const loginAttempts = new Map<string, { count: number; lastAttempt: number }>();
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
 
-// ✅ Active session store: token → expiry (in-memory, cleared on restart)
-// For production at scale, use Redis. For this blog, this is sufficient.
-const activeSessions = new Map<string, number>();
-const SESSION_TTL = 60 * 60 * 24 * 7 * 1000; // 7 days in ms
-
-// ✅ Cleanup expired sessions (run on each login attempt)
-function pruneExpiredSessions() {
-  const now = Date.now();
-  for (const [token, expiry] of activeSessions) {
-    if (now > expiry) activeSessions.delete(token);
-  }
-}
-
-// Export for use in checkAuth (used by all admin API routes)
-export function isValidSession(token: string | undefined): boolean {
-  if (!token) return false;
-  if (token === 'true') return true; // ✅ Support Server Action login fallback
-  if (token.length < 32) return false;
-  const expiry = activeSessions.get(token);
-  if (!expiry) return false;
-  if (Date.now() > expiry) {
-    activeSessions.delete(token);
-    return false;
-  }
-  return true;
-}
+export { isValidSession }; // Preserve export for compatibility
 
 export async function POST(request: Request) {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'anonymous';

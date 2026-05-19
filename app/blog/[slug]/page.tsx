@@ -13,6 +13,7 @@ interface Props {
 
 // ✅ SSG: Pre-build all published posts at build time (LCP ~40% faster)
 export const revalidate = 60; // ISR for stability
+export const dynamicParams = true;
 
 export async function generateStaticParams() {
   const posts = await getPosts();

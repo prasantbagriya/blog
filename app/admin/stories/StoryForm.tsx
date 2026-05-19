@@ -38,10 +38,15 @@ export default function StoryForm({ story }: { story?: WebStory }) {
     try {
       const result = await handleUpload(formData);
       setUploading(false);
-      return result.url || '';
-    } catch (e) {
+      if (result.success && result.url) {
+        return result.url;
+      } else {
+        alert(`Upload failed: ${result.error || 'Unknown error'}`);
+        return '';
+      }
+    } catch (e: any) {
       setUploading(false);
-      alert('Upload failed');
+      alert(`Upload failed: ${e.message || 'Connection error'}`);
       return '';
     }
   };
@@ -64,11 +69,16 @@ export default function StoryForm({ story }: { story?: WebStory }) {
 
   const handleSave = async (published: boolean) => {
     startTransition(async () => {
-      const generatedSlug = slug || title.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
+      const cleanSlug = (slug || title)
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
       const updatedStory: WebStory = {
         id: id,
         title,
-        slug: generatedSlug,
+        slug: cleanSlug,
         description,
         category,
         tags,

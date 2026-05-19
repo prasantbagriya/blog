@@ -264,6 +264,15 @@ export default function RootLayout({
           `}
         </Script>
 
+        {/* ✅ Google AdSense (Auto Ads) - Enabled via env variable */}
+        {process.env.NEXT_PUBLIC_ADSENSE_PID && (
+          <Script
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_PID}`}
+            crossOrigin="anonymous"
+            strategy="afterInteractive"
+          />
+        )}
+
         <Script id="inp-guard" strategy="afterInteractive" dangerouslySetInnerHTML={{
           __html: `
           try {

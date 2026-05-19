@@ -780,11 +780,17 @@ export default function PostForm({ post }: PostFormProps) {
    const handleSave = async (published: boolean = true) => {
       if (!editor) return;
       startTransition(async () => {
+         const cleanSlug = (slug || title)
+            .toLowerCase()
+            .trim()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/[\s_-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
          const updatedPost: Post = {
             ...post,
             id: post?.id || crypto.randomUUID(),
             title,
-            slug: slug || title.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-'),
+            slug: cleanSlug,
             content: editor.getHTML(),
             metaDescription,
             excerpt: excerpt || metaDescription || title,
