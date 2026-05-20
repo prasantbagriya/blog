@@ -27,10 +27,11 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     { label: 'Dashboard', href: '/admin', icon: '🏠' },
     { label: 'All Posts', href: '/admin', icon: '📌' },
     { label: 'Authors', href: '/admin/authors', icon: '👥' },
+    { label: 'Categories', href: '/admin/categories', icon: '📁' },
     { label: 'Add New', href: '/admin/new', icon: '➕' },
     { label: 'Web Stories', href: '/admin/stories', icon: '⚡' },
     { label: 'Media Library', href: '/admin/media', icon: '🖼️' },
-    { label: 'SEO Audit', href: '#', icon: '📈' },
+    { label: 'SEO Audit', href: '/admin/seo-audit', icon: '📈' },
     { label: 'Settings', href: '#', icon: '⚙️' },
   ];
 

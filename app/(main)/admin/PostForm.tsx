@@ -316,6 +316,8 @@ export default function PostForm({ post }: PostFormProps) {
    const [authorImage, setAuthorImage] = useState(post?.authorImage || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80');
    const [author, setAuthor] = useState(post?.author || 'Admin');
    const [availableAuthors, setAvailableAuthors] = useState<AuthorProfile[]>([]);
+   const [availableCategories, setAvailableCategories] = useState<import('@/lib/types').Category[]>([]);
+  
    const [focusKeyword, setFocusKeyword] = useState('');
    const [category, setCategory] = useState(post?.category || 'General');
    const [tags, setTags] = useState<string[]>(post?.tags || []);
@@ -381,6 +383,55 @@ export default function PostForm({ post }: PostFormProps) {
    const [newCorrectionNote, setNewCorrectionNote] = useState('');
    const [coverImageWidth, setCoverImageWidth] = useState<number | null>(null);
 
+   // ✅ AI SEO Audit State
+   const [isAiAuditing, setIsAiAuditing] = useState(false);
+   const [aiSuggestions, setAiSuggestions] = useState<any>(null);
+   const [appliedAiSuggestions, setAppliedAiSuggestions] = useState<Record<string, boolean>>({});
+
+   const runAiAudit = async () => {
+      setIsAiAuditing(true);
+      setAiSuggestions(null);
+      setAppliedAiSuggestions({});
+      try {
+         const res = await fetch('/api/admin/seo-audit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+               title, content: editor?.getHTML(), metaDescription, excerpt, seoTitle, ogTitle, ogDescription, keywords, tags, faqs, keyTakeaways, category
+            })
+         });
+         const data = await res.json();
+         if (data.success) {
+            setAiSuggestions(data.suggestions);
+         } else {
+            alert('AI Audit Failed: ' + data.error);
+         }
+      } catch (err: any) {
+         alert('AI Audit Error: ' + err.message);
+      }
+      setIsAiAuditing(false);
+   };
+
+   const applyAiSuggestion = (key: string, suggestionObj: any) => {
+      const val = suggestionObj?.value ?? suggestionObj;
+      switch(key) {
+         case 'metaDescription': setMetaDescription(val); break;
+         case 'excerpt': setExcerpt(val); break;
+         case 'seoTitle': setSeoTitle(val); break;
+         case 'ogTitle': setOgTitle(val); break;
+         case 'ogDescription': setOgDescription(val); break;
+         case 'keywords': setKeywords(val); break;
+         case 'tags': 
+            setTags(Array.isArray(val) ? val : (typeof val === 'string' ? val.split(',').map((t: string) => t.trim()).filter((t: string) => t.length > 0) : [])); 
+            break;
+         case 'faqs': setFaqs(Array.isArray(val) ? val : []); break;
+         case 'keyTakeaways': setKeyTakeaways(Array.isArray(val) ? val : []); break;
+         case 'optimizedContent': editor?.commands.setContent(val); break;
+      }
+      
+      setAppliedAiSuggestions((prev) => ({ ...prev, [key]: true }));
+   };
+
    useEffect(() => {
       if (coverImage) {
          const img = new window.Image();
@@ -397,12 +448,13 @@ export default function PostForm({ post }: PostFormProps) {
    }, [coverImage]);
 
    useEffect(() => {
-      fetch('/api/admin/authors')
-         .then(res => res.json())
-         .then(data => {
+        fetch('/api/admin/authors').then(r => r.json()).then(data => {
             if (Array.isArray(data)) setAvailableAuthors(data);
-         })
-         .catch(console.error);
+         }).catch(e => console.error(e));
+
+         fetch('/api/admin/categories').then(r => r.json()).then(data => {
+            if (Array.isArray(data)) setAvailableCategories(data);
+         }).catch(e => console.error(e));
    }, []);
 
    const [eeatChecklist, setEeatChecklist] = useState({
@@ -1347,6 +1399,7 @@ export default function PostForm({ post }: PostFormProps) {
                                     <label style={metaLabelStyle}>SELECT SAVED AUTHOR PROFILE</label>
                                     <select 
                                       style={metaInputStyle}
+                                      value={availableAuthors.find(a => a.name === author)?.id || ''}
                                       onChange={e => {
                                         const selected = availableAuthors.find(a => a.id === e.target.value);
                                         if (selected) {
@@ -1365,80 +1418,20 @@ export default function PostForm({ post }: PostFormProps) {
                                       <option value="">-- Choose an Author --</option>
                                       {availableAuthors.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                                     </select>
-                                    <span style={{ fontSize: '11px', color: '#64748b' }}>Selecting an author will auto-fill the fields below.</span>
+                                    <span style={{ fontSize: '11px', color: '#64748b' }}>This connects the post to a rich Author Profile for EEAT.</span>
                                  </div>
                                )}
-                               <InputGroup label="AUTHOR NAME" value={author} onChange={setAuthor} placeholder="e.g. Admin or Subject Matter Expert" />
-                               <InputGroup label="AUTHOR JOB TITLE" value={authorExpertise} onChange={setAuthorExpertise} placeholder="e.g. Subject Matter Expert" />
-                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                  <label style={metaLabelStyle}>AUTHOR IMAGE URL</label>
-                                  <div style={{ display: 'flex', gap: '8px' }}>
-                                     <input value={authorImage} onChange={e => setAuthorImage(e.target.value)} placeholder="https://..." style={{ ...metaInputStyle, flex: 1 }} />
-                                     <button type="button" onClick={() => setMediaPickerTarget('author')} style={{ ...addNodeBtn, width: 'auto', background: '#f8fafc', padding: '0 16px', fontSize: '11px', margin: 0 }}>Library</button>
-                                     <button type="button" onClick={() => authorInputRef.current?.click()} style={{ ...addNodeBtn, width: 'auto', background: '#fff', border: '1px dashed #cbd5e1', padding: '0 16px', fontSize: '11px', margin: 0 }}>Upload</button>
-                                  </div>
-                                  <input type="file" ref={authorInputRef} onChange={handleAuthorImageUpload} style={{ display: 'none' }} accept="image/*" />
-                               </div>
-
-                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                  <label style={metaLabelStyle}>AUTHOR BIOGRAPHY</label>
-                                  <textarea placeholder="Write a short professional bio..." value={authorBio} onChange={e => setAuthorBio(e.target.value)} style={metaTextAreaStyle} />
-                               </div>
-
-                               {/* ✅ Experience Years */}
-                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                  <label style={metaLabelStyle}>YEARS OF EXPERIENCE</label>
-                                  <input type="number" min={0} max={60} value={authorExperienceYears || ''} onChange={e => setAuthorExperienceYears(Number(e.target.value))} placeholder="e.g. 8" style={metaInputStyle} />
-                               </div>
-
-                               {/* ✅ Alma Mater / Education */}
-                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                  <label style={metaLabelStyle}>🎓 EDUCATION / ALMA MATER</label>
-                                  {authorAlumniOf.map((a, i) => (
-                                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f0f7ff', borderRadius: '10px', padding: '8px 12px', fontSize: '12px', border: '1px solid #dbeafe' }}>
-                                        <div style={{ flex: 1 }}>
-                                           <div style={{ fontWeight: 700, color: '#1e293b' }}>{a.name}</div>
-                                           {a.sameAs && <div style={{ color: '#94a3b8', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.sameAs}</div>}
-                                        </div>
-                                        <button onClick={() => setAuthorAlumniOf(authorAlumniOf.filter((_, idx) => idx !== i))} style={{ border: 'none', background: '#fee2e2', color: '#dc2626', borderRadius: '6px', padding: '4px 8px', cursor: 'pointer', fontSize: '11px', fontWeight: 700 }}>✕</button>
-                                     </div>
-                                  ))}
-                                  <input value={alumniNameInput} onChange={e => setAlumniNameInput(e.target.value)} placeholder="University / College Name" style={{ ...metaInputStyle, marginBottom: '6px' }} />
-                                  <input value={alumniSameAsInput} onChange={e => setAlumniSameAsInput(e.target.value)} placeholder="Official URL or Wikidata (https://...)" style={{ ...metaInputStyle, marginBottom: '6px' }} />
-                                  <button onClick={() => { if (alumniNameInput.trim()) { setAuthorAlumniOf([...authorAlumniOf, { name: alumniNameInput.trim(), sameAs: alumniSameAsInput.trim() }]); setAlumniNameInput(''); setAlumniSameAsInput(''); } }} style={addNodeBtn}>+ Add Education</button>
-                               </div>
-
-                               {/* ✅ Professional Awards */}
-                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                  <label style={metaLabelStyle}>🏆 PROFESSIONAL AWARDS</label>
-                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-                                     {authorAwards.map((award, i) => (
-                                        <span key={i} style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                           🏆 {award}
-                                           <button onClick={() => setAuthorAwards(authorAwards.filter((_, idx) => idx !== i))} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#854d0e', fontWeight: 900, padding: 0, lineHeight: 1 }}>✕</button>
-                                        </span>
-                                     ))}
-                                  </div>
-                                  <div style={{ display: 'flex', gap: '8px' }}>
-                                     <input value={awardInput} onChange={e => setAwardInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && awardInput.trim()) { setAuthorAwards([...authorAwards, awardInput.trim()]); setAwardInput(''); }}} placeholder="e.g. Best Tech Writer 2024" style={{ ...metaInputStyle, flex: 1 }} />
-                                     <button onClick={() => { if (awardInput.trim()) { setAuthorAwards([...authorAwards, awardInput.trim()]); setAwardInput(''); }}} style={{ ...addNodeBtn, width: 'auto', padding: '0 16px', margin: 0 }}>Add</button>
-                                  </div>
-                               </div>
-
-                               {/* ✅ Expert Topics (knowsAbout) */}
-                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                  <label style={metaLabelStyle}>🧠 EXPERT TOPICS (KNOWS ABOUT)</label>
-                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-                                     {authorKnowsAbout.map((k, i) => (
-                                        <span key={i} title={k.sameAs} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #dbeafe', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                           {k.name}
-                                           <button onClick={() => setAuthorKnowsAbout(authorKnowsAbout.filter((_, idx) => idx !== i))} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#2563eb', fontWeight: 900, padding: 0, lineHeight: 1 }}>✕</button>
-                                        </span>
-                                     ))}
-                                  </div>
-                                  <input value={knowsAboutNameInput} onChange={e => setKnowsAboutNameInput(e.target.value)} placeholder="Expert Topic (e.g. Search Engine Optimization)" style={{ ...metaInputStyle, marginBottom: '6px' }} />
-                                  <input value={knowsAboutSameAsInput} onChange={e => setKnowsAboutSameAsInput(e.target.value)} placeholder="Wikidata URL (optional, e.g. https://www.wikidata.org/wiki/Q180711)" style={{ ...metaInputStyle, marginBottom: '6px' }} />
-                                  <button onClick={() => { if (knowsAboutNameInput.trim()) { setAuthorKnowsAbout([...authorKnowsAbout, { name: knowsAboutNameInput.trim(), sameAs: knowsAboutSameAsInput.trim() }]); setKnowsAboutNameInput(''); setKnowsAboutSameAsInput(''); }}} style={addNodeBtn}>+ Add Expert Topic</button>
+                               
+                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginTop: '16px' }}>
+                                  <label style={metaLabelStyle}>SELECT CATEGORY</label>
+                                  <select 
+                                    style={metaInputStyle}
+                                    value={category}
+                                    onChange={e => setCategory(e.target.value)}
+                                  >
+                                    <option value="General">General</option>
+                                    {availableCategories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                                  </select>
                                </div>
 
                                <InputGroup label="FACT CHECKED BY" value={factCheckedBy} onChange={setFactCheckedBy} placeholder="e.g. Dr. Sarah Connor" />
@@ -1470,10 +1463,6 @@ export default function PostForm({ post }: PostFormProps) {
                                   </div>
                                </div>
 
-                               <div style={sidebarHeadingStyle}>Author Socials (EEAT)</div>
-                               <InputGroup label="TWITTER" value={authorSocials.twitter || ''} onChange={(val: string) => setAuthorSocials({...authorSocials, twitter: val})} placeholder="https://twitter.com/..." />
-                               <InputGroup label="LINKEDIN" value={authorSocials.linkedin || ''} onChange={(val: string) => setAuthorSocials({...authorSocials, linkedin: val})} placeholder="https://linkedin.com/in/..." />
-                               <InputGroup label="WEBSITE" value={authorSocials.website || ''} onChange={(val: string) => setAuthorSocials({...authorSocials, website: val})} placeholder="https://..." />
 
                                <div style={eeatCheckStyle}>
                                   <input type="checkbox" checked={eeatChecklist.credentialsIncluded} onChange={e => setEeatChecklist({...eeatChecklist, credentialsIncluded: e.target.checked})} />
@@ -1666,21 +1655,54 @@ export default function PostForm({ post }: PostFormProps) {
                                  <button type="button" onClick={() => coverInputRef.current?.click()} style={{ ...addNodeBtn, background: '#fff', border: '1px dashed #cbd5e1', flex: 1 }}>{coverImage ? 'Change Cover Photo' : 'Upload Cover Photo'}</button>
                               </div>
                               <input type="file" ref={coverInputRef} onChange={handleCoverUpload} style={{ display: 'none' }} accept="image/*" />
-                              <div style={{ height: '15px' }} />
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                 <label style={metaLabelStyle}>AUTHOR IMAGE URL</label>
-                                 <div style={{ display: 'flex', gap: '8px' }}>
-                                    <input value={authorImage} onChange={e => setAuthorImage(e.target.value)} placeholder="https://..." style={{ ...metaInputStyle, flex: 1 }} />
-                                    <button onClick={() => authorInputRef.current?.click()} style={{ ...addNodeBtn, width: 'auto', background: '#fff', border: '1px dashed #cbd5e1', padding: '0 16px', fontSize: '11px', margin: 0 }}>Upload</button>
-                                 </div>
-                              </div>
                            </div>
 
                            <h3 style={sidebarHeadingStyle}>Keywords & Indexing</h3>
                            <div style={hcuCardStyle}>
                               <InputGroup label="FOCUS KEYWORD" value={focusKeyword} onChange={setFocusKeyword} placeholder="Primary search term" />
                               <div style={{ height: '15px' }} />
-                              <InputGroup label="KEYWORDS (TAGS)" value={keywords} onChange={setKeywords} placeholder="Comma separated LSI keywords" />
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                 <label style={metaLabelStyle}>LSI FOCUS TAGS</label>
+                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                                    {tags.map((tag, i) => (
+                                       <span key={i} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #dbeafe', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                          {tag}
+                                          <button onClick={() => setTags(tags.filter((_, idx) => idx !== i))} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#2563eb', fontWeight: 900, padding: 0, lineHeight: 1 }}>✕</button>
+                                       </span>
+                                    ))}
+                                 </div>
+                                 <div style={{ display: 'flex', gap: '8px' }}>
+                                    <input 
+                                       value={tagInput} 
+                                       onChange={e => setTagInput(e.target.value)} 
+                                       onKeyDown={e => { 
+                                          if (e.key === 'Enter') { 
+                                             e.preventDefault();
+                                             if (tagInput.trim() && !tags.includes(tagInput.trim())) { 
+                                                setTags([...tags, tagInput.trim()]); 
+                                                setTagInput(''); 
+                                             }
+                                          }
+                                       }} 
+                                       placeholder="Add tag and press Enter" 
+                                       style={{ ...metaInputStyle, flex: 1 }} 
+                                    />
+                                    <button 
+                                       onClick={(e) => { 
+                                          e.preventDefault();
+                                          if (tagInput.trim() && !tags.includes(tagInput.trim())) { 
+                                             setTags([...tags, tagInput.trim()]); 
+                                             setTagInput(''); 
+                                          }
+                                       }} 
+                                       style={{ ...addNodeBtn, width: 'auto', padding: '0 16px', margin: 0 }}
+                                    >
+                                       Add
+                                    </button>
+                                 </div>
+                              </div>
+                              <div style={{ height: '15px' }} />
+                              <InputGroup label="KEYWORDS (LEGACY)" value={keywords} onChange={setKeywords} placeholder="Comma separated keywords" />
                               <div style={{ height: '15px' }} />
                               <InputGroup label="CANONICAL URL" value={canonicalUrl} onChange={setCanonicalUrl} placeholder="Avoid duplicate content issues" />
                            </div>
@@ -1697,6 +1719,67 @@ export default function PostForm({ post }: PostFormProps) {
 
                      {activeTab === 'seo' && (
                         <motion.div key="seo" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                           <h3 style={sidebarHeadingStyle}>AI SEO Audit</h3>
+                           <div style={{ ...hcuCardStyle, background: 'linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%)', border: '1px solid #e9d5ff' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+                                 <span style={{ fontSize: '18px' }}>✨</span>
+                                 <span style={{ fontWeight: 800, fontSize: '14px', color: '#7e22ce' }}>GEMINI AUTO-FILL</span>
+                              </div>
+                              <p style={{ fontSize: '11px', color: '#6b21a8', marginBottom: '15px' }}>Analyze content and generate missing SEO values (Meta, Tags, FAQs, etc.)</p>
+                              
+                              <button 
+                                 onClick={(e) => { e.preventDefault(); runAiAudit(); }}
+                                 disabled={isAiAuditing}
+                                 style={{ 
+                                    ...addNodeBtn, 
+                                    background: isAiAuditing ? '#e9d5ff' : '#9333ea', 
+                                    color: '#fff', 
+                                    border: 'none',
+                                    fontWeight: 'bold',
+                                    width: '100%',
+                                    marginBottom: aiSuggestions ? '15px' : '0'
+                                 }}
+                              >
+                                 {isAiAuditing ? 'Analyzing Content...' : 'Run AI SEO Audit'}
+                              </button>
+
+                              {aiSuggestions && (
+                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
+                                    {Object.entries(aiSuggestions).map(([key, val]: [string, any]) => {
+                                       const isApplied = appliedAiSuggestions[key];
+                                       const message = val?.message || '';
+                                       const suggestionValue = val?.value ?? val;
+                                       
+                                       return (
+                                       <div key={key} style={{ background: isApplied ? '#f0fdf4' : '#fff', padding: '12px', borderRadius: '8px', border: `1px solid ${isApplied ? '#bbf7d0' : '#e2e8f0'}`, fontSize: '11px' }}>
+                                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                             <div style={{ fontWeight: 'bold', color: isApplied ? '#166534' : '#475569', textTransform: 'uppercase' }}>
+                                                {key} {isApplied && '✅ Updated'}
+                                             </div>
+                                          </div>
+                                          {!isApplied && message && (
+                                             <div style={{ color: '#b45309', marginBottom: '8px', background: '#fffbeb', padding: '6px 8px', borderRadius: '4px', border: '1px solid #fef3c7' }}>
+                                                ⚠️ {message}
+                                             </div>
+                                          )}
+                                          <div style={{ color: '#1e293b', marginBottom: isApplied ? '0' : '10px', background: isApplied ? 'transparent' : '#f8fafc', padding: isApplied ? '0' : '8px', borderRadius: '4px', overflowWrap: 'anywhere' }}>
+                                             {typeof suggestionValue === 'string' ? suggestionValue : JSON.stringify(suggestionValue)}
+                                          </div>
+                                          {!isApplied && (
+                                             <button 
+                                                onClick={(e) => { e.preventDefault(); applyAiSuggestion(key, val); }}
+                                                style={{ background: '#9333ea', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', color: '#fff', width: '100%' }}
+                                             >
+                                                Apply Suggestion
+                                             </button>
+                                          )}
+                                       </div>
+                                       );
+                                    })}
+                                 </div>
+                              )}
+                           </div>
+
                            <h3 style={sidebarHeadingStyle}>Turbo Indexing Engine</h3>
                            <div style={hcuCardStyle}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>

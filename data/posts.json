@@ -7,7 +7,7 @@
     "metaDescription": "On 10th May 2026, Prime Minister Narendra Modi spoke directly to the people of India. In a simple and emotional appeal, he requested everyone to stop buying gold for weddings and functions for one year.",
     "excerpt": "On 10th May 2026, Prime Minister Narendra Modi spoke directly to the people of India. In a simple and emotional appeal, he requested everyone to stop buying gold for weddings and functions for one year.",
     "coverImage": "/uploads/media-1779255879256-435872850.png",
-    "authorImage": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80",
+    "authorImage": "/uploads/media-1779256004256-409405479.jpeg",
     "authorSocials": {
       "twitter": "",
       "linkedin": "https://www.linkedin.com/in/prasantbagriya/",
@@ -19,7 +19,16 @@
     "canonicalUrl": "",
     "keywords": "Gold Import Duty, Gold Import Duty Raised from 6% to 15%: Full Impact Explained",
     "category": "General",
-    "tags": [],
+    "tags": [
+      "Gold Import Duty",
+      "Indian Economy",
+      "PM Modi Gold Appeal",
+      "Gold Prices India",
+      "Foreign Reserves",
+      "Gold Investment",
+      "India Gold Market",
+      "Economic Policy"
+    ],
     "faqs": [
       {
         "question": "Why was the gold import duty raised to 15%?",
@@ -40,10 +49,10 @@
     ],
     "published": true,
     "date": "2026-05-17",
-    "author": "Prasant Bagriya",
+    "author": "Kapil Kumar",
     "factCheckedBy": "Prasant Bagriya",
     "factCheckerRole": "Editorial Reviewer",
-    "authorJobTitle": "Subject Matter Expert",
+    "authorJobTitle": "Car Review / Automobile Review / Vehicle Analysis",
     "authorBio": "",
     "researchMethodology": "",
     "sources": [],
@@ -53,7 +62,13 @@
     "targetRegion": "IN",
     "targetLanguage": "en-IN",
     "contentScope": "india",
-    "reviewCycleDays": 90
+    "reviewCycleDays": 90,
+    "keyTakeaways": [
+      "Prime Minister Modi appealed to Indian citizens to halt gold purchases for one year to safeguard the nation's foreign reserves.",
+      "India's gold import duty has been significantly increased from 6% to 15% to curb excessive gold imports.",
+      "The primary objectives of this duty hike are to control India's gold purchases from abroad and protect the country's foreign exchange reserves.",
+      "This policy change is expected to influence gold demand, pricing, and consumer spending habits across India."
+    ]
   },
   {
     "id": "c8ef71c3-d9ce-435e-83ef-ad802dbb9d76",
@@ -114,7 +129,15 @@
     "canonicalUrl": "https://chatwizs.com/blog/",
     "keywords": "Skoda Elroq 2026, Skoda Elroq India price, Skoda Elroq launch date, Skoda Elroq EV, Skoda electric SUV India, Skoda Elroq specifications, Skoda Elroq features, Skoda Elroq review, Skoda Elroq range, new Skoda EV 2026, Skoda Elroq vs BYD Atto 3, Skoda Elroq booking",
     "category": "General",
-    "tags": [],
+    "tags": [
+      "Skoda Kodiaq",
+      "2026 Kodiaq",
+      "New SUV",
+      "Seven Seater SUV",
+      "Kodiaq Price",
+      "Car Launch India",
+      "Skoda India"
+    ],
     "faqs": [
       {
         "question": "Is Skoda Kodiaq 2026 Launched?",
@@ -152,6 +175,11 @@
     "targetLanguage": "en-IN",
     "contentScope": "india",
     "lastModified": "2026-05-20",
-    "reviewCycleDays": 90
+    "reviewCycleDays": 90,
+    "keyTakeaways": [
+      "The 2026 Škoda Kodiaq, a new seven-seater SUV, has been launched with a starting ex-showroom price of ₹36.99 lakh.",
+      "This latest edition boasts advanced features, a refreshed design, multiple color options, and a powerful engine.",
+      "The SUV is expected to be offered in multiple trims, with detailed variant-wise pricing to suit different budgets and preferences."
+    ]
   }
 ]

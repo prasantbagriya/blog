@@ -105,15 +105,18 @@ const DATA_DIR = path.resolve(process.cwd(), 'data');
 const DB_PATH = path.join(DATA_DIR, 'posts.json');
 const STORIES_PATH = path.join(DATA_DIR, 'stories.json');
 const AUTHORS_PATH = path.join(DATA_DIR, 'authors.json');
+const CATEGORIES_PATH = path.join(DATA_DIR, 'categories.json');
 
 // Cache posts in memory to avoid disk I/O on every request
 // We refresh this cache every 10 seconds to balance speed and sync
 let cachedPosts: Post[] | null = null;
 let cachedStories: WebStory[] | null = null;
 let cachedAuthors: import('./types').AuthorProfile[] | null = null;
+let cachedCategories: import('./types').Category[] | null = null;
 let lastReadPosts = 0;
 let lastReadStories = 0;
 let lastReadAuthors = 0;
+let lastReadCategories = 0;
 const CACHE_WINDOW = 10000; // 10 seconds
 
 async function fastWrite(filePath: string, data: any) {
@@ -130,6 +133,9 @@ async function fastWrite(filePath: string, data: any) {
     } else if (filePath === AUTHORS_PATH) {
       cachedAuthors = null;
       lastReadAuthors = 0;
+    } else if (filePath === CATEGORIES_PATH) {
+      cachedCategories = null;
+      lastReadCategories = 0;
     }
   } catch (err) {
     console.error('CRITICAL WRITE ERROR:', err);
@@ -140,15 +146,10 @@ async function loadData<T>(filePath: string): Promise<T[]> {
   const now = Date.now();
   
   // Use memory cache if available and fresh
-  if (filePath === DB_PATH && cachedPosts && (now - lastReadPosts < CACHE_WINDOW)) {
-    return cachedPosts as unknown as T[];
-  }
-  if (filePath === STORIES_PATH && cachedStories && (now - lastReadStories < CACHE_WINDOW)) {
-    return cachedStories as unknown as T[];
-  }
-  if (filePath === AUTHORS_PATH && cachedAuthors && (now - lastReadAuthors < CACHE_WINDOW)) {
-    return cachedAuthors as unknown as T[];
-  }
+  if (filePath === DB_PATH && lastReadPosts >= now - CACHE_WINDOW) return cachedPosts as unknown as T[];
+  if (filePath === STORIES_PATH && lastReadStories >= now - CACHE_WINDOW) return cachedStories as unknown as T[];
+  if (filePath === AUTHORS_PATH && lastReadAuthors >= now - CACHE_WINDOW) return cachedAuthors as unknown as T[];
+  if (filePath === CATEGORIES_PATH && lastReadCategories >= now - CACHE_WINDOW) return cachedCategories as unknown as T[];
 
   try {
     // If file doesn't exist, return empty (don't create here to save I/O)
@@ -168,6 +169,10 @@ async function loadData<T>(filePath: string): Promise<T[]> {
     if (filePath === AUTHORS_PATH) {
       cachedAuthors = data;
       lastReadAuthors = now;
+    }
+    if (filePath === CATEGORIES_PATH) {
+      cachedCategories = data;
+      lastReadCategories = now;
     }
     
     return data;
@@ -245,4 +250,28 @@ export async function deleteAuthor(id: string) {
   const authors = await getAuthors();
   const filtered = authors.filter(a => a.id !== id);
   await fastWrite(AUTHORS_PATH, filtered);
+}
+
+// CATEGORIES
+export async function getCategories(): Promise<import('./types').Category[]> {
+  return await loadData<import('./types').Category>(CATEGORIES_PATH);
+}
+
+export async function getCategoryById(id: string): Promise<import('./types').Category | undefined> {
+  const categories = await getCategories();
+  return categories.find(c => c.id === id);
+}
+
+export async function saveCategory(category: import('./types').Category) {
+  const categories = await getCategories();
+  const index = categories.findIndex(c => c.id === category.id);
+  if (index > -1) categories[index] = category;
+  else categories.push(category);
+  await fastWrite(CATEGORIES_PATH, categories);
+}
+
+export async function deleteCategory(id: string) {
+  const categories = await getCategories();
+  const filtered = categories.filter(c => c.id !== id);
+  await fastWrite(CATEGORIES_PATH, filtered);
 }
