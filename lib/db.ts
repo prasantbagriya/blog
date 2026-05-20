@@ -50,6 +50,8 @@ export interface Post {
   isPillarPage?: boolean;
   semanticMentions?: { name: string; sameAs: string }[]; 
   integrityHash?: string;
+  isNoIndex?: boolean;             // ✅ GSC: Exclude from search index (noindex, nofollow)
+  corrections?: { date: string; note: string }[]; // ✅ GSC: Transparent editorial corrections log
   // ✅ GEO SEO 2026: Geographic & language targeting signals
   targetRegion?: string;           // e.g. 'IN', 'US', 'GB' (ISO 3166-1 alpha-2)
   targetLanguage?: string;         // e.g. 'en-IN', 'hi-IN', 'en-US'
@@ -58,6 +60,7 @@ export interface Post {
   contentScope?: 'global' | 'india' | 'regional'; // Geographic content scope
   inLanguage?: string;             // BCP 47 language code e.g. 'en-IN'
 }
+
 
 export interface StorySlide {
   id: string;
@@ -94,19 +97,23 @@ export interface WebStory {
   metaDescription?: string;    
   isSponsored?: boolean;       
   textLength?: number;         
+  isNoIndex?: boolean;         // ✅ GSC: Exclude story from search index
 }
 
 // ✅ ULTRA-STABLE PATHS
 const DATA_DIR = path.resolve(process.cwd(), 'data');
 const DB_PATH = path.join(DATA_DIR, 'posts.json');
 const STORIES_PATH = path.join(DATA_DIR, 'stories.json');
+const AUTHORS_PATH = path.join(DATA_DIR, 'authors.json');
 
 // Cache posts in memory to avoid disk I/O on every request
 // We refresh this cache every 10 seconds to balance speed and sync
 let cachedPosts: Post[] | null = null;
 let cachedStories: WebStory[] | null = null;
+let cachedAuthors: import('./types').AuthorProfile[] | null = null;
 let lastReadPosts = 0;
 let lastReadStories = 0;
+let lastReadAuthors = 0;
 const CACHE_WINDOW = 10000; // 10 seconds
 
 async function fastWrite(filePath: string, data: any) {
@@ -120,6 +127,9 @@ async function fastWrite(filePath: string, data: any) {
     } else if (filePath === STORIES_PATH) {
       cachedStories = null;
       lastReadStories = 0;
+    } else if (filePath === AUTHORS_PATH) {
+      cachedAuthors = null;
+      lastReadAuthors = 0;
     }
   } catch (err) {
     console.error('CRITICAL WRITE ERROR:', err);
@@ -136,6 +146,9 @@ async function loadData<T>(filePath: string): Promise<T[]> {
   if (filePath === STORIES_PATH && cachedStories && (now - lastReadStories < CACHE_WINDOW)) {
     return cachedStories as unknown as T[];
   }
+  if (filePath === AUTHORS_PATH && cachedAuthors && (now - lastReadAuthors < CACHE_WINDOW)) {
+    return cachedAuthors as unknown as T[];
+  }
 
   try {
     // If file doesn't exist, return empty (don't create here to save I/O)
@@ -151,6 +164,10 @@ async function loadData<T>(filePath: string): Promise<T[]> {
     if (filePath === STORIES_PATH) {
       cachedStories = data;
       lastReadStories = now;
+    }
+    if (filePath === AUTHORS_PATH) {
+      cachedAuthors = data;
+      lastReadAuthors = now;
     }
     
     return data;
@@ -204,4 +221,28 @@ export async function deletePost(id: string) {
   const posts = await getPosts();
   const filtered = posts.filter(p => p.id !== id);
   await fastWrite(DB_PATH, filtered);
+}
+
+// AUTHORS
+export async function getAuthors(): Promise<import('./types').AuthorProfile[]> {
+  return await loadData<import('./types').AuthorProfile>(AUTHORS_PATH);
+}
+
+export async function getAuthorById(id: string): Promise<import('./types').AuthorProfile | undefined> {
+  const authors = await getAuthors();
+  return authors.find(a => a.id === id);
+}
+
+export async function saveAuthor(author: import('./types').AuthorProfile) {
+  const authors = await getAuthors();
+  const index = authors.findIndex(a => a.id === author.id);
+  if (index > -1) authors[index] = author;
+  else authors.push(author);
+  await fastWrite(AUTHORS_PATH, authors);
+}
+
+export async function deleteAuthor(id: string) {
+  const authors = await getAuthors();
+  const filtered = authors.filter(a => a.id !== id);
+  await fastWrite(AUTHORS_PATH, filtered);
 }

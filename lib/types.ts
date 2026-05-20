@@ -41,6 +41,7 @@ export interface Post {
   isPillarPage?: boolean;
   semanticMentions?: { name: string; sameAs: string }[]; 
   integrityHash?: string; 
+  isNoIndex?: boolean; 
 }
 
 export interface StorySlide {
@@ -78,4 +79,25 @@ export interface WebStory {
   metaDescription?: string;    
   isSponsored?: boolean;       
   textLength?: number;         
+  isNoIndex?: boolean; 
+}
+
+export interface AuthorProfile {
+  id: string;
+  name: string;
+  bio: string;
+  image: string;
+  jobTitle: string;
+  experienceYears?: number;
+  awards?: string[];
+  alumniOf?: { name: string; sameAs: string }[];
+  socials: {
+    twitter?: string;
+    linkedin?: string;
+    website?: string;
+    youtube?: string;
+    facebook?: string;
+    instagram?: string;
+  };
+  knowsAbout?: { name: string; sameAs: string }[];
 }

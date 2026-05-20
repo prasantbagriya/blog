@@ -188,8 +188,6 @@ Sitemap: ${BASE_URL}/news-sitemap.xml`;
   const publicDir = path.join(process.cwd(), 'public');
   if (!existsSync(publicDir)) mkdirSync(publicDir);
 
-  writeFileSync(path.join(publicDir, 'sitemap.xml'), sitemap);
-  writeFileSync(path.join(publicDir, 'news-sitemap.xml'), newsSitemap);
   writeFileSync(path.join(publicDir, 'feed.xml'), rss);
   writeFileSync(path.join(publicDir, 'robots.txt'), robots);
   
